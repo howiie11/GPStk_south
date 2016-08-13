@@ -1,0 +1,297 @@
+Hello, rinex3!
+sat: G02
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G12
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G14
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G21
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G25
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G26
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G29
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: G31
+RinexObsID:  L1 GPSC/A pseudorange TypeID: C1
+RinexObsID:  L1 GPSC/A phase TypeID: L1
+RinexObsID:  L1 GPSC/A snr TypeID: S1
+RinexObsID:  L2 GPScodelessZ pseudorange TypeID: P2
+RinexObsID:  L2 GPScodelessZ phase TypeID: L2
+RinexObsID:  L2 GPScodelessZ snr TypeID: S2
+RinexObsID:  L2 GPSC2L+M pseudorange TypeID: P2
+RinexObsID:  L2 GPSC2L+M phase TypeID: L2
+RinexObsID:  L2 GPSC2L+M snr TypeID: S2
+RinexObsID:  L5 GPSI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GPSI+Q5 phase TypeID: L5
+RinexObsID:  L5 GPSI+Q5 snr TypeID: S5
+sat: E24
+RinexObsID:  L1 GALB+C pseudorange TypeID: C1
+RinexObsID:  L1 GALB+C phase TypeID: L1
+RinexObsID:  L1 GALB+C snr TypeID: S1
+RinexObsID:  L5 GALI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GALI+Q5 phase TypeID: L5
+RinexObsID:  L5 GALI+Q5 snr TypeID: S5
+RinexObsID:  E5b GALI+Q5 pseudorange TypeID: C7
+RinexObsID:  E5b GALI+Q5 phase TypeID: L7
+RinexObsID:  E5b GALI+Q5 snr TypeID: S7
+RinexObsID:  L5a+b GALI+Q5 pseudorange TypeID: C8
+RinexObsID:  L5a+b GALI+Q5 phase TypeID: L8
+RinexObsID:  L5a+b GALI+Q5 snr TypeID: S8
+sat: E26
+RinexObsID:  L1 GALB+C pseudorange TypeID: C1
+RinexObsID:  L1 GALB+C phase TypeID: L1
+RinexObsID:  L1 GALB+C snr TypeID: S1
+RinexObsID:  L5 GALI+Q5 pseudorange TypeID: C5
+RinexObsID:  L5 GALI+Q5 phase TypeID: L5
+RinexObsID:  L5 GALI+Q5 snr TypeID: S5
+RinexObsID:  E5b GALI+Q5 pseudorange TypeID: C7
+RinexObsID:  E5b GALI+Q5 phase TypeID: L7
+RinexObsID:  E5b GALI+Q5 snr TypeID: S7
+RinexObsID:  L5a+b GALI+Q5 pseudorange TypeID: C8
+RinexObsID:  L5a+b GALI+Q5 phase TypeID: L8
+RinexObsID:  L5a+b GALI+Q5 snr TypeID: S8
+sat: R01
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R02
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R09
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R10
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R11
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R16
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R18
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R19
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R20
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: R21
+RinexObsID:  G1 GLOC/A pseudorange TypeID: C1
+RinexObsID:  G1 GLOC/A phase TypeID: L1
+RinexObsID:  G1 GLOC/A snr TypeID: S1
+RinexObsID:  G1 GLOP pseudorange TypeID: P1
+RinexObsID:  G1 GLOP phase TypeID: L1
+RinexObsID:  G1 GLOP snr TypeID: S1
+RinexObsID:  G2 GLOC/A pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOC/A phase TypeID: UnknownType
+RinexObsID:  G2 GLOC/A snr TypeID: UnknownType
+RinexObsID:  G2 GLOP pseudorange TypeID: UnknownType
+RinexObsID:  G2 GLOP phase TypeID: UnknownType
+RinexObsID:  G2 GLOP snr TypeID: UnknownType
+sat: S20
+RinexObsID:  L1 SBASC/A pseudorange TypeID: C1
+RinexObsID:  L1 SBASC/A phase TypeID: L1
+RinexObsID:  L1 SBASC/A snr TypeID: S1
+sat: S25
+RinexObsID:  L1 SBASC/A pseudorange TypeID: C1
+RinexObsID:  L1 SBASC/A phase TypeID: L1
+RinexObsID:  L1 SBASC/A snr TypeID: S1
+sat: S36
+RinexObsID:  L1 SBASC/A pseudorange TypeID: C1
+RinexObsID:  L1 SBASC/A phase TypeID: L1
+RinexObsID:  L1 SBASC/A snr TypeID: S1
+sat: C05
+RinexObsID:  L2 GPSI5 pseudorange TypeID: UnknownType
+RinexObsID:  L2 GPSI5 phase TypeID: UnknownType
+RinexObsID:  L2 GPSI5 snr TypeID: UnknownType
+RinexObsID:  E5b BDSIL6 pseudorange TypeID: C7
+RinexObsID:  E5b BDSIL6 phase TypeID: L7
+RinexObsID:  E5b BDSIL6 snr TypeID: S7
+RinexObsID:  B6 BDSIL7 pseudorange TypeID: C2
+RinexObsID:  B6 BDSIL7 phase TypeID: L2
+RinexObsID:  B6 BDSIL7 snr TypeID: S2
+sat: C12
+RinexObsID:  L2 GPSI5 pseudorange TypeID: UnknownType
+RinexObsID:  L2 GPSI5 phase TypeID: UnknownType
+RinexObsID:  L2 GPSI5 snr TypeID: UnknownType
+RinexObsID:  E5b BDSIL6 pseudorange TypeID: C7
+RinexObsID:  E5b BDSIL6 phase TypeID: L7
+RinexObsID:  E5b BDSIL6 snr TypeID: S7
+RinexObsID:  B6 BDSIL7 pseudorange TypeID: C2
+RinexObsID:  B6 BDSIL7 phase TypeID: L2
+RinexObsID:  B6 BDSIL7 snr TypeID: S2
+01/05/2016 00:00:00 GPS
+C1: 23072224.703
+P2: 23072230.895
+C5: 23072230.781

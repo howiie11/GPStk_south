@@ -3020,6 +3020,7 @@ in matrix and number of types do not match") );
 
             return i;
          }
+
          catch (...)
          {
             return i;
@@ -3027,31 +3028,38 @@ in matrix and number of types do not match") );
       }
       if( Rinex3ObsStream::IsRinex3ObsStream(i) )     // Rinex3
       {
-         Rinex3ObsStream& strm = dynamic_cast<Rinex3ObsStream&>(i);
-
-         // If the header hasn't been read, read it...
-         if(!strm.headerRead) strm >> strm.header;
-
-         // Clear out this object
-         Rinex3ObsHeader& roh = strm.header;
-
-         Rinex3ObsData rod;
-         strm >> rod;
-
-         // Fill data
-         f.header.source.type = SatIDsystem2SourceIDtype(roh.fileSysSat);
-         f.header.source.sourceName = roh.markerName;
-         f.header.antennaType = roh.antType;
-         f.header.antennaPosition = roh.antennaPosition;
-         f.header.epochFlag = rod.epochFlag;
-         f.header.epoch = rod.time;
-
-         f.body = satTypeValueMapFromRinex3ObsData(roh, rod);
-
-         return i;
+			try
+			{
+	         Rinex3ObsStream& strm = dynamic_cast<Rinex3ObsStream&>(i);
+	
+				// If the header hasn't been read, read it...
+				if(!strm.headerRead) strm >> strm.header;
+	         // Clear out this object
+	         Rinex3ObsHeader& roh = strm.header;
+	
+	         Rinex3ObsData rod;
+	         strm >> rod;
+	
+	         // Fill data
+	         f.header.source.type = SatIDsystem2SourceIDtype(roh.fileSysSat);
+	         f.header.source.sourceName = roh.markerName;
+	         f.header.antennaType = roh.antType;
+	         f.header.antennaPosition = roh.antennaPosition;
+	         f.header.epochFlag = rod.epochFlag;
+	         f.header.epoch = rod.time;
+	
+	         f.body = satTypeValueMapFromRinex3ObsData(roh, rod);
+	
+	         return i;
+			}
+			catch (FFStreamError& e)
+			{
+			   GPSTK_THROW(e);	
+				return i;
+			}
       }
-
-      return i;
+			// Other stream case			
+		return i;
 
    }  // End of stream input for gnssRinex
 
@@ -3358,17 +3366,31 @@ in matrix and number of types do not match") );
       {
          RinexSatID sat(it->first);
 
-
          typeValueMap tvMap;
 
          map<std::string,std::vector<RinexObsID> > mapObsTypes(roh.mapObsTypes);
+         map<std::string,std::vector<RinexObsID> >priorMapObsTypes(roh.getValidMapObsTypes() );
          const vector<RinexObsID> types = mapObsTypes[sat.toString().substr(0,1)];
+         vector<RinexObsID> priorTypes = priorMapObsTypes[sat.toString().substr(0,1)];
 
          for(size_t i=0; i<types.size(); i++)
          {
+					// Find present type in priorTypes
+				vector<RinexObsID>::iterator iter = find(priorTypes.begin(),
+																	  priorTypes.end(),
+																	  types[i]);
+				if( iter == priorTypes.end() )
+				{
+						// Here means that this type is not prior
+					continue;
+				}  // End of 'if( iter == priorTypes.end() ) '
+
+
             TypeID type = ConvertToTypeID(types[i],sat);
 
-            const int n = GetCarrierBand(types[i]);
+
+            
+				const int n = GetCarrierBand(types[i]);
 
             if(types[i].type==ObsID::otPhase)   // Phase
             {

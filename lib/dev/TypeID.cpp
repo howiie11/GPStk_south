@@ -712,7 +712,7 @@ namespace gpstk
             if(roi.type == ObsID::otSNR) return TypeID::S1;
          }
          // For L2: C2 P2 L2 D2 S2
-         else if(roi.band == ObsID::cbG1)
+         else if(roi.band == ObsID::cbG2)
          {
             if(roi.type == ObsID::otRange)   // tcGCA or tcGP
                return (roi.code == ObsID::tcGCA) ? TypeID::C2 : TypeID::P2;
@@ -721,6 +721,7 @@ namespace gpstk
             if(roi.type == ObsID::otDoppler) return TypeID::D2;
             if(roi.type == ObsID::otSNR) return TypeID::S2;
          }
+
       }
       else if(sat.system==SatID::systemGalileo)
       {

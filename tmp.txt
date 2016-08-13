@@ -1,0 +1,2 @@
+Binary file build/tests/Multi-Gnss/CMakeFiles/satWatcher.dir/satWatcher.cpp.o matches
+Binary file build/tests/Multi-Gnss/satWatcher matches

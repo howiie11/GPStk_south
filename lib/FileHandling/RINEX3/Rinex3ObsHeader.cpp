@@ -100,6 +100,8 @@ namespace gpstk
       if     (version == 3.00)  allValid = allValid30;
       else if(version == 3.01)  allValid = allValid301;
       else if(version == 3.02)  allValid = allValid302;
+			// Added by Lei Zhao, 2016/07/30
+      else if(version == 3.03)  allValid = allValid303;
       else if(version <  3)     allValid = allValid2;
       else {
          FFStreamError err("Unknown RINEX version: " + asString(version,2));
@@ -111,7 +113,11 @@ namespace gpstk
          ostringstream msg;
          msg << endl;
          msg << "Version = " << version << hex << endl;
-         if(version == 3.02)
+
+				// Added by Lei Zhao, 2016/07/30
+			if(version == 3.03)
+            msg << "allValid303 = 0x" << setw(8) << nouppercase << allValid303 << endl;
+			else if(version == 3.02)
             msg << "allValid302 = 0x" << setw(8) << nouppercase << allValid302 << endl;
          else if(version == 3.01)
             msg << "allValid301 = 0x" << setw(8) << nouppercase << allValid301 << endl;
@@ -909,6 +915,8 @@ namespace gpstk
       int i;
       string label(line, 60, 20);
          
+
+
       if(label == stringVersion)
       {
          version  = asDouble(line.substr( 0,20));
@@ -1078,12 +1086,15 @@ namespace gpstk
             GPSTK_THROW(e);
          }
 
+
+
          static const int maxObsPerLine = 13;
 
          satSysTemp = strip(line.substr(0,1));
          numObs     = asInt(line.substr(3,3));
 
-         try {
+         try 
+			{
             if(satSysTemp == "" ) // it's a continuation line; use previous info.
             {
                satSysTemp = satSysPrev;
@@ -1100,17 +1111,32 @@ namespace gpstk
             }
             else                    // it's a new line, use info. read in
             {
-               vector<RinexObsID> newTypeList;
+               
+					vector<RinexObsID> newTypeList;
                for(i = 0; (i < numObs) && (i < maxObsPerLine); i++)
                {
                   int position = 4*i + 6 + 1;
-                  RinexObsID rt(satSysTemp+line.substr(position,3));
+
+							// Change BDS C1x to C2x 
+							// Position of carrier band
+						int cbPos = position + 1;
+						string cb = line.substr(cbPos,1);
+
+						if( (satSysTemp) == "C" && (cb == "1") )
+						{
+								// Change to carrier band 2
+							line[cbPos] = '2';
+						}
+
+                  
+						RinexObsID rt(satSysTemp+line.substr(position,3));
                   newTypeList.push_back(rt);
                }
                mapObsTypes[satSysTemp] = newTypeList;
             }
          }
          catch(InvalidParameter& ip) {
+
             FFStreamError fse("InvalidParameter: "+ip.what());
             GPSTK_THROW(fse);
          }
@@ -1460,8 +1486,9 @@ namespace gpstk
 
          try
          {
-//            std::cout << "Parse header record >" << line << "<" << std::endl;
+            //std::cout << "Parse header record >" << line << "<" << std::endl;
             ParseHeaderRecord(line);
+
          }
          catch(FFStreamError& e)
          {
@@ -1474,6 +1501,7 @@ namespace gpstk
          }
 
       } // end while(not end of header)
+
 
       // if RINEX 2, define mapObsTypes from R2ObsTypes and system(s)
       // this may have to be corrected later using wavelengthFactor
@@ -1678,12 +1706,15 @@ namespace gpstk
          valid |= validSystemPhaseShift;
       }
 
+
       // is the header valid?
       unsigned long allValid;
       if     (version <  3  )  allValid = allValid2;
       else if(version == 3.0)  allValid = allValid30;
       else if(version == 3.01) allValid = allValid301;
       else if(version == 3.02) allValid = allValid302;
+			// Added by Lei Zhao, 2016/07/30
+      else if(version == 3.03) allValid = allValid303;
       else
       {
          FFStreamError e("Unknown or unsupported RINEX version " + 
@@ -1691,8 +1722,10 @@ namespace gpstk
          GPSTK_THROW(e);
       }
 
+
       if((valid & allValid) != allValid)
       {
+
          FFStreamError e("Incomplete or invalid header");
          GPSTK_THROW(e);
       }
@@ -1705,6 +1738,8 @@ namespace gpstk
       // 1.determine time system from time tag in TIME OF FIRST OBS record
       // 2.if not given, determine from type in RINEX VERSION / TYPE record
       // 3.(if the type is MIXED, the time system in firstObs is required by RINEX)
+
+
       strm.timesystem = firstObs.getTimeSystem();
       if(strm.timesystem == TimeSystem::Any ||
          strm.timesystem == TimeSystem::Unknown)
@@ -1900,7 +1935,12 @@ namespace gpstk
       else if(version == 3.01)  allValid = allValid301;
       else if(version == 3.02)  allValid = allValid302;
 
+			// Added by Lei Zhao, 2016/07/30
+      else if(version == 3.03)  allValid = allValid303;
+		
       s << "(This header is ";
+
+
       if((valid & allValid) == allValid)
          s << "VALID)" << endl;
       else {
@@ -2080,6 +2120,263 @@ namespace gpstk
       s << "-------------------------------- END OF HEADER "
         << "--------------------------------" << endl;
    } // end dump
+
+		// This strategy copied from ObsID
+	std::map< std::string, std::map<ObsID::CarrierBand, std::map<ObsID::TrackingCode, double> > > Rinex3ObsHeader::sysCbTcPriMap;
+
+	Rinex3ObsHeaderInitializer singleton2;
+
+		// Handy print method for object of type SysToBandCodeVec
+	void Rinex3ObsHeader::print(std::ostream& s, SysToBandCodeVec stbcv)
+	{
+		for( SysToBandCodeVec::iterator it = stbcv.begin();
+			  it != stbcv.end();
+			  ++it )
+		{
+			s << it->first << endl;
+			for( std::map<ObsID::CarrierBand, std::set<ObsID::TrackingCode> >::
+				  iterator ite = (*it).second.begin();
+				  ite != (*it).second.end();
+				  ++ite )
+			{
+				s << ite->first << " ";
+				for( std::set<ObsID::TrackingCode>::iterator iter = ite->second.begin();
+					  iter != ite->second.end();
+					  ++iter )
+				{
+					s << *iter << " ";
+				}  // End of ' for( std::vector<ObsID::Code> ... '
+
+				s << endl;
+			}  // End of ' for( std::map<ObsID::CarrierBand ... ' 
+		}  // End of ' for( SysToBandCodeVec::iterator it ... '
+	}
+
+		
+		/** This method returns a prior code for every system
+		 *
+		 */
+	ObsID::TrackingCode Rinex3ObsHeader::getPriorCode( std::string sys,
+												 ObsID::CarrierBand cb,
+												 std::set<ObsID::TrackingCode> codeSet ) const 
+	{
+		ObsID::TrackingCode tc = ObsID::tcUnknown;
+		double maxPriority(0.0);
+
+			// Loop through codeSet
+		for( std::set<ObsID::TrackingCode>::iterator it = codeSet.begin();
+			  it != codeSet.end();
+			  ++it )
+		{
+			ObsID::TrackingCode tc_tmp = *it;
+			double priority = sysCbTcPriMap[sys][cb][tc_tmp];
+
+			if( priority > maxPriority )
+			{
+				maxPriority = priority;
+				tc = tc_tmp;
+			}
+
+		}  // End of ' for( std::set<ObsID::TrackingCode>:: ... '
+
+		return tc;
+	}	
+													
+
+		/** This method returns a prior code for every system
+		 *
+		 */
+	Rinex3ObsHeader::SysToBandCodeVec Rinex3ObsHeader::getPriorCode(
+												Rinex3ObsHeader::SysToBandCodeVec stbcv ) const 
+	{
+		SysToBandCodeVec tempStbc;
+		
+			// Loop through stbcv
+		for( SysToBandCodeVec::iterator it = stbcv.begin();
+			  it != stbcv.end();
+			  ++it )
+		{
+			string sys = it->first;
+			for( std::map<ObsID::CarrierBand, std::set<ObsID::TrackingCode> >::
+				  iterator ite = (*it).second.begin();
+				  ite != (*it).second.end();
+				  ++ite )
+			{
+				ObsID::CarrierBand cb = ite->first;
+				std::set<ObsID::TrackingCode> codeSet = ite->second;
+
+				if( sys == "G" || sys == "R" || sys == "E" )
+				{
+					ObsID::TrackingCode tc = getPriorCode(sys, cb, codeSet);
+					tempStbc[sys][cb].insert(tc);
+				}
+				else{
+					tempStbc[sys][cb] = ite->second;
+				}
+
+				
+			}  // End of ' for( std::map<ObsID::CarrierBand ... ' 
+
+		}  // End of ' for( SysToBandCodeVec::iterator ... '
+
+		return tempStbc; 
+	}
+		/** This method gets Code vector for given mapObsTypes
+		 *
+		 */
+	Rinex3ObsHeader::SysToBandCodeVec Rinex3ObsHeader::getCodeVec() const  
+	{
+			// Return object 
+		Rinex3ObsHeader::SysToBandCodeVec tmpSbcv; 
+		
+			// Loop through mapObsTypes 
+		for( SysToObsTypesMap::const_iterator it = mapObsTypes.begin();
+			  it != mapObsTypes.end();
+			  ++it )
+		{
+
+				// Get present system
+			std::string sys = (*it).first;
+
+			for( std::vector<RinexObsID>::const_iterator ite = (*it).second.begin();
+				  ite != (*it).second.end();
+				  ++ite )
+			{
+					// Get present RinexObsID
+				RinexObsID roi = (*ite);
+
+					// Get its band
+				ObsID::CarrierBand cb = roi.band;
+
+					// Get its code
+				ObsID::TrackingCode tc = roi.code;
+	
+				tmpSbcv[sys][cb].insert(tc);
+
+			}  // End of ' for( vector::iterator ... '
+		}  // End of ' for( std::vector<RinexObsID>::iterator ... '
+
+		return tmpSbcv;
+		
+	}  // Ebd of ' Rinex3ObsHeader::SysToBandCodeVec ... '
+
+		/** This method filter mapObsTypes accorinding to 
+		 *
+		 */
+	Rinex3ObsHeader::SysToObsTypesMap Rinex3ObsHeader::FilterMapObsTypes( Rinex3ObsHeader::SysToBandCodeVec stbc ) const 
+	{
+		Rinex3ObsHeader::SysToObsTypesMap tmpMap;
+		
+			// Loop through mapObsTypes
+		for( SysToObsTypesMap::const_iterator it = mapObsTypes.begin();
+			  it != mapObsTypes.end();
+			  ++it )
+		{
+
+				// Get present system
+			std::string sys = (*it).first;
+
+			for( std::vector<RinexObsID>::const_iterator ite = (*it).second.begin();
+				  ite != (*it).second.end();
+				  ++ite )
+			{
+					// Get present RinexObsID
+				RinexObsID roi = (*ite);
+
+					// Get its band
+				ObsID::CarrierBand cb = roi.band;
+
+					// Gey present code
+				ObsID::TrackingCode tc = roi.code;
+
+					// Find the code in stbc
+				std::set<ObsID::TrackingCode>::iterator iter = stbc[sys][cb].find(tc);
+				if( iter != stbc[sys][cb].end() )
+				{
+						// Here means that present code is prior
+					tmpMap[sys].push_back(roi);
+				}  // End of ' if( iter != stbc[sys][cb].end() ) '
+
+			}  // End of ' for( vector::iterator ... '
+		}  // End of ' for( std::vector<RinexObsID>::iterator ... '
+
+		return tmpMap;
+
+	}  // End of ' Rinex3ObsHeader::SysToObsTypesMap FilterMapObsTypes ... ' 
+	
+		/** This method returns a valid observation types map from
+		 *  mapObsTypes
+		 */
+	Rinex3ObsHeader::SysToObsTypesMap Rinex3ObsHeader::getValidMapObsTypes() const 
+	{
+			// Return object
+		Rinex3ObsHeader::SysToObsTypesMap tmp1;
+
+			// Step1: Get code vector for all system
+		Rinex3ObsHeader::SysToBandCodeVec stbcv = getCodeVec();
+
+			// Step2: Find prior code of every frequency for every system
+		Rinex3ObsHeader::SysToBandCodeVec stbc = getPriorCode( stbcv );
+
+			// Step3: Filter mapObsTypes
+		tmp1 = FilterMapObsTypes( stbc );
+		
+//		Rinex3ObsHeader::SysToObsTypesMap tmpStom;
+//		for( SysToObsTypesMap::iterator it = stom.begin();
+//			  it != stom.end();
+//			  ++it )
+//		{
+//			std::vector<RinexObsID> tmpV;
+//
+//				// Get present system
+//			std::string sys = (*it).second();
+//
+//			for( std::vector<RinexObsID>::iterator ite = (*it).second.begin();
+//				  ite != (*it).second.end();
+//				  ++ite )
+//			{
+//					// Get present RinexObsID
+//				RinexObsID roi = (*ite);
+//
+//					// Get its band
+//				ObsID::CarrierBand cb = roi.band;
+//
+//					// Get its code
+//				ObsID::TrackingCode tc = roi.code;
+//				
+//					
+//
+//					// Get valid observation type vector
+//				//tmpV = getValidObsVec(sys, cb, (*ite).second);
+//
+//
+//			}  // End of ' for( vector::iterator ... '
+//		}  // End of ' for( std::vector<RinexObsID>::iterator ... '
+
+
+
+		//Rinex3ObsHeader::SysToObsTypesMap tmp = mapObsTypes;
+		return tmp1;
+	}  // End of ' virtual SysToObsTypesMap getValidMapObsTypes(  ... '
+	
+		// Handy print method for object of type SysToObsTypesMap
+	void Rinex3ObsHeader::print(std::ostream& s, SysToObsTypesMap stom)
+	{
+		for( SysToObsTypesMap::iterator it = stom.begin();
+			  it != stom.end();
+			  ++it )
+		{
+			s << it->first << " ";
+			for( std::vector<RinexObsID>::iterator ite = (*it).second.begin();
+				  ite != (*it).second.end();
+				  ++ite )
+			{
+				s << *ite << " ";
+			}  // End of ' for( vector::iterator ... '
+
+			s << endl;
+		}  // End of ' for( SysToObsTypesMap::iterator it ...'
+	}  // End of ' virtual void print(std::ostream& s, ... ' 
 
 
       /* This method returns the numerical index of a given observation

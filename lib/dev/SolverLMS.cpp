@@ -136,6 +136,15 @@ of designMatrix");
       throw(ProcessingException, SVNumException)
    {
 
+
+			// Check the num of satellites
+			// Added by Lei Zhao, 2016/07/21
+		if( gData.numSats() < 4 )
+		{
+			SVNumException e("Less than 4 satellites at this epoch");
+			GPSTK_THROW(e);
+		}
+
       try
       {
 
@@ -167,6 +176,7 @@ of designMatrix");
       }
       catch(Exception& u)
       {
+			
             // Throw an exception if something unexpected happens
          ProcessingException e( getClassName() + ":"
                                 + u.what() );
@@ -187,17 +197,21 @@ of designMatrix");
       throw(InvalidRequest)
    {
 
-         // Define iterator
+	         // Define iterator
       TypeIDSet::const_iterator it;
 
          // Check if the provided type exists in the solution. If not,
          // an InvalidSolver exception will be issued.
       it = defaultEqDef.body.find(type);
+
+
       if( it == defaultEqDef.body.end() )
       {
+
          InvalidRequest e("Type not found in solution vector.");
          GPSTK_THROW(e);
       }
+
 
 
          // Define counter

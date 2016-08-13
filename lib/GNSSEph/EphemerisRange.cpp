@@ -127,6 +127,7 @@ namespace gpstk
          for(int i=0; i<2; i++) {
             // get SV position
             try {
+
                svPosVel = Eph.getXvt(sat,tt);
             }
             catch(InvalidRequest& e) {
@@ -135,6 +136,8 @@ namespace gpstk
             tt = transmit;
             // remove clock bias and relativity correction
             tt -= (svPosVel.clkbias + svPosVel.relcorr);
+
+
          }
 
          rotateEarth(Rx);
@@ -160,6 +163,7 @@ namespace gpstk
       const XvtStore<SatID>& Eph)
    {
       try {
+			
          gpstk::GPSEllipsoid gm;
          svPosVel = Eph.getXvt(sat, tr_nom);
          double pr = svPosVel.preciseRho(Rx, gm);

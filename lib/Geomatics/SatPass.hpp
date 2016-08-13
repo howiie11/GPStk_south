@@ -475,8 +475,11 @@ protected:
                                     std::vector<std::string>& obstypes,
                                     double dt,
                                     std::vector<SatPass>& SPList,
-               gpstk::CommonTime beginTime=gpstk::CommonTime::BEGINNING_OF_TIME,
-               gpstk::CommonTime endTime=gpstk::CommonTime::END_OF_TIME)
+						// Changed by Lei Zhao, 2016/07/05
+					gpstk::CommonTime beginTime,
+					gpstk::CommonTime endTime)
+               //gpstk::CommonTime beginTime=gpstk::CommonTime::BEGINNING_OF_TIME,
+               //gpstk::CommonTime endTime=gpstk::CommonTime::END_OF_TIME)
       throw(Exception);
 
    /// Iterate over the input vector of SatPass objects (sorted to be in time

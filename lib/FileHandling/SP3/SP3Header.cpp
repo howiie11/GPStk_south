@@ -49,6 +49,7 @@
 #include "GPSWeekSecond.hpp"
 
 #define debug false
+//#define debug true
 
 namespace gpstk
 {

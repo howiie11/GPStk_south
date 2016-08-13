@@ -29,14 +29,22 @@
 //  Dagoberto Salazar - gAGE ( http://www.gage.es ). 2007, 2008, 2009, 2011
 //
 //============================================================================
-
+// 
+// 2016/07/29
+//
+// Augment satTypeValueMapFromRinex3ObsData algorithm
+// 1. exception catch
+// 2. read prior observation type accoring to code priority in
+//		rinex3ObsHeaderInitializer.cpp
+//
+// Lei Zhao, in Inner Mongolia 
+//============================================================================
 
 #include <utility>
 #include <vector>
 #include <set>
 #include <map>
 #include <string>
-
 #include "DataHeaders.hpp"
 #include "FFData.hpp"
 #include "RinexObsStream.hpp"

@@ -101,4 +101,6 @@ install (FILES ${HEADERS} ${HEADERS2} DESTINATION include/pppbox )
 # GPSTk Subdirectories
 add_subdirectory (apps)
 add_subdirectory (examples)
+add_subdirectory (tests/Multi-Gnss/ppp_test)
+add_subdirectory (tests/Multi-Gnss/spp_test)
 

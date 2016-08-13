@@ -278,6 +278,10 @@ namespace gpstk
 
       try
       {
+			// debug code vvv
+			std::cout << "ModelObs::Prepare method " << std::endl;
+			// debug code ^^^
+
          raimObj.PrepareAutonomousSolution(Tr, Satellite, Pseudorange, Eph, SVP);
          if( Ban.Compute(SVP, vPos) < 0 )
          {
@@ -409,6 +413,7 @@ namespace gpstk
             // First, if the model is not prepared let's take care of it
          if( !getModelPrepared() )
          {
+
             Prepare(time, gData);
          }
 

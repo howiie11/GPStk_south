@@ -87,8 +87,14 @@ namespace gpstk
                typeValueMap::iterator it( (*satIt).second.find(*typeIt) );
 
                   // Now, check if this TypeID exists in this data structure
-               if ( it == (*satIt).second.end() )
+						
+						// Augmentation: 
+						// Identify the existed type but with zero value
+						// Added by Lei Zhao, 2016/07/21, WHU
+
+               if ( it == (*satIt).second.end() || ( (*satIt).second(*typeIt) == 0.0 ) )
                {
+
                      // If we couldn't find type, then schedule this
                      // satellite for removal
                   satRejectedSet.insert( (*satIt).first );
@@ -97,7 +103,7 @@ namespace gpstk
                   typeIt = requiredTypeSet.end();
                   --typeIt;
                }
-
+					
             }
 
          }

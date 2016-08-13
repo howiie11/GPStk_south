@@ -29,9 +29,10 @@
 //  Dagoberto Salazar - gAGE ( http://www.gage.es ). 2007, 2008, 2011
 //
 //============================================================================
-
-
-
+// 2016/07/21
+// If the value of reqiired type is zero for a sat, remove it too
+// Lei Zhao, WHU
+//============================================================================
 #include "ProcessingClass.hpp"
 
 

@@ -1,0 +1,2 @@
+ftp://cddis.gsfc.nasa.gov/pub/gps/data/campaign/mgex/daily/rinex3/2016/005/16n/
+ftp://cddis.gsfc.nasa.gov/gnss/products/

@@ -1,0 +1,8 @@
+
+# Project1: accoring to the ppp structure designed by Shoujian Zhang
+#				I need to copy that to ensure a convenient program environment
+# time: 2016/08/08
+# Lei Zhao, Inner Mongolia
+
+
+

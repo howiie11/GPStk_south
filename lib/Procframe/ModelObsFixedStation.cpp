@@ -349,6 +349,10 @@ namespace gpstk
                // When using pseudorange method, this is 1.0
             (*stv).second[TypeID::cdt] = 1.0;
 
+				// debug code vvv
+				(*stv).second[TypeID::Unknown] = 1.0;
+				// debug code ^^^
+
                // Now we have to add the new values to the data structure
             (*stv).second[TypeID::rho] = cerange.rawrange;
             (*stv).second[TypeID::rel] = -cerange.relativity;

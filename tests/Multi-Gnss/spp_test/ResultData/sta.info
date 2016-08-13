@@ -1,0 +1,496 @@
+station: abmf: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/abmf0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: aira: 
+text 0:TimeSystem in MIXED files must be given by first obs
+text 1:In record 0
+text 2:In file ObsData/obs/aira0050.16o
+text 3:Near file line 25
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1758
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: areg: 
+GLONASS average_sats_num: 7.44861
+station: brst: 
+GLONASS average_sats_num: 8.39826
+station: brux: 
+GLONASS average_sats_num: 8.78924
+station: cas1: 
+GLONASS average_sats_num: 9.14757
+station: cebr: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/cebr0050.16o
+text 3:Near file line 17
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: chpg: 
+GLONASS average_sats_num: 7.37639
+station: djig: 
+GLONASS average_sats_num: 7.86037
+station: dlf1: 
+GLONASS average_sats_num: 9.12565
+station: dyng: 
+GLONASS average_sats_num: 7.94965
+station: frtz: 
+libc++abi.dylib: terminating with unexpected exception of type gpstk::InvalidParameter
+./getIdealStation.sh: line 8:  5028 Abort trap: 6           satWatcher ${dir}/$rnxName
+station: ftna: 
+GLONASS average_sats_num: 6.75382
+station: gmsd: 
+GLONASS average_sats_num: 7.53507
+station: gop7: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/gop70050.16o
+text 3:Near file line 18
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: grac: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/grac0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: jfng: 
+GLONASS average_sats_num: 7.02951
+station: karr: 
+GLONASS average_sats_num: 7.65417
+station: kiri: 
+GLONASS average_sats_num: 7.57014
+station: kiru: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/kiru0050.16o
+text 3:Near file line 18
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: koug: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/koug0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: kour: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/kour0050.16o
+text 3:Near file line 16
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: krgg: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/krgg0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: m0se: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/m0se0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: mal2: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/mal20050.16o
+text 3:Near file line 17
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: mas1: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/mas10050.16o
+text 3:Near file line 17
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: matg: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/matg0050.16o
+text 3:Near file line 19
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: mayg: 
+GLONASS average_sats_num: 7.56389
+station: metg: 
+GLONASS average_sats_num: 8.66701
+station: mgue: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/mgue0050.16o
+text 3:Near file line 17
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: mro1: 
+GLONASS average_sats_num: 7.73264
+station: myva: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/myva0050.16o
+text 3:Near file line 34
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: nico: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/nico0050.16o
+text 3:Near file line 33
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: nklg: 
+GLONASS average_sats_num: 7.96215
+station: nnor: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/nnor0050.16o
+text 3:Near file line 18
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: ohi2: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/ohi20050.16o
+text 3:Near file line 29
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: ohi3: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/ohi30050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: pado: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/pado0050.16o
+text 3:Near file line 33
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: pert: 
+GLONASS average_sats_num: 7.02222
+station: redu: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/redu0050.16o
+text 3:Near file line 17
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: reun: 
+GLONASS average_sats_num: 6.44965
+station: reyk: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/reyk0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: rgdg: 
+GLONASS average_sats_num: 8.95729
+station: roap: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/roap0050.16o
+text 3:Near file line 15
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: samo: 
+GLONASS average_sats_num: 7.55382
+station: scrz: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/scrz0050.16o
+text 3:Near file line 33
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: seyg: 
+GLONASS average_sats_num: 7.19722
+station: sptu: 
+GLONASS average_sats_num: 7.91354
+station: stj3: 
+GLONASS average_sats_num: 8.19884
+station: thtg: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/thtg0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: tlse: 
+GLONASS average_sats_num: 8.60035
+station: tlsg: 
+GLONASS average_sats_num: 8.59444
+station: tow2: 
+GLONASS average_sats_num: 7.22326
+station: unb3: 
+GLONASS average_sats_num: 8.6625
+station: vill: 
+text 0:Unidentified label: >SYS / PHASE SHIFTS<
+text 1:In record 0
+text 2:In file ObsData/obs/vill0050.16o
+text 3:Near file line 17
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1448
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1495
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 7:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 8:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: wroc: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/wroc0050.16o
+text 3:Near file line 36
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: wtz2: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/wtz20050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: wtzr: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/wtzr0050.16o
+text 3:Near file line 35
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+
+station: xmis: 
+GLONASS average_sats_num: 7.22674
+station: yar2: 
+GLONASS average_sats_num: 7.26215
+station: yel2: 
+GLONASS average_sats_num: 9.27188
+station: zimj: 
+text 0:Incomplete or invalid header
+text 1:In record 0
+text 2:In file ObsData/obs/zimj0050.16o
+text 3:Near file line 173
+location 0:/Users/zhaolei/pppbox/lib/FileHandling/RINEX3/Rinex3ObsHeader.cpp:1729
+location 1:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.cpp:154
+location 2:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 3:/Users/zhaolei/pppbox/lib/FileHandling/FFStream.hpp:190
+location 4:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:83
+location 5:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:123
+location 6:/Users/zhaolei/pppbox/lib/FileHandling/FFData.cpp:138
+location 7:/Users/zhaolei/pppbox/lib/dev/DataStructures.cpp:3057
+

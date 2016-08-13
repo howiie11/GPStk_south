@@ -50,10 +50,12 @@ namespace gpstk
    {
       if(!isValidRinexObsID(strID)) {
          InvalidParameter ip(strID + " is not a valid RinexObsID");
+
          GPSTK_THROW(ip);
       }
       try {
          ObsID obsid(strID);
+
          *this = RinexObsID(obsid.type, obsid.band, obsid.code);
          //*this = RinexObsID(obsid);
       }
@@ -161,6 +163,16 @@ namespace gpstk
       char ot(strID[0]);
       char cb(strID[1]);
       char tc(strID[2]);
+		
+		// debug code vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+//			// According to Rinex document 3.03, section 5.1:
+//			// accept C1x coding for BDS
+//		if ( (sys == 'C') && (cb == '1')  )
+//		{
+//			cb = '2';
+//		}
+		// debug code ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
       std::string codes(ObsID::validRinexTrackingCodes[sys][cb]);
       if(codes.find(std::string(1,tc)) == std::string::npos)
          return false;

@@ -1,0 +1,275 @@
+Parse header record >     3.02           OBSERVATION DATA    M                   RINEX VERSION / TYPE<
+(v) after version:        1
+(av) after version:  41205ab
+(v & av) after runby:        1
+Parse header record >NetR9 4.85          IGN-RGP             05-JAN-16 00:00:01  PGM / RUN BY / DATE<
+(v) after version:        3
+(av) after version:  41205ab
+(v & av) after runby:        3
+Parse header record >BRST                                                        MARKER NAME<
+(v) after version:        b
+(av) after version:  41205ab
+(v & av) after runby:        b
+Parse header record >10004M004                                                   MARKER NUMBER<
+(v) after version:       1b
+(av) after version:  41205ab
+(v & av) after runby:        b
+Parse header record >GEODETIC                                                    MARKER TYPE<
+(v) after version:       3b
+(av) after version:  41205ab
+(v & av) after runby:       2b
+Parse header record >Automatic           IGN                                     OBSERVER / AGENCY<
+(v) after version:       7b
+(av) after version:  41205ab
+(v & av) after runby:       2b
+Parse header record >5046K71749          TRIMBLE NETR9       4.85                REC # / TYPE / VERS<
+(v) after version:       fb
+(av) after version:  41205ab
+(v & av) after runby:       ab
+Parse header record >1441017048          TRM57971.00     NONE                    ANT # / TYPE<
+(v) after version:      1fb
+(av) after version:  41205ab
+(v & av) after runby:      1ab
+Parse header record >  4231162.7880  -332746.9200  4745130.6890                  APPROX POSITION XYZ<
+(v) after version:      3fb
+(av) after version:  41205ab
+(v & av) after runby:      1ab
+Parse header record >        2.0431        0.0000        0.0000                  ANTENNA: DELTA H/E/N<
+(v) after version:      7fb
+(av) after version:  41205ab
+(v & av) after runby:      5ab
+Parse header record >G   12 C1C L1C S1C C2W L2W S2W C2X L2X S2X C5X L5X S5X      SYS / # / OBS TYPES<
+sys: G cb: 1
+line.substr: C1C
+sys: G cb: 1
+line.substr: L1C
+sys: G cb: 1
+line.substr: S1C
+sys: G cb: 2
+line.substr: C2W
+sys: G cb: 2
+line.substr: L2W
+sys: G cb: 2
+line.substr: S2W
+sys: G cb: 2
+line.substr: C2X
+sys: G cb: 2
+line.substr: L2X
+sys: G cb: 2
+line.substr: S2X
+sys: G cb: 5
+line.substr: C5X
+sys: G cb: 5
+line.substr: L5X
+sys: G cb: 5
+line.substr: S5X
+(v) after version:    207fb
+(av) after version:  41205ab
+(v & av) after runby:    205ab
+Parse header record >S    3 C1C L1C S1C                                          SYS / # / OBS TYPES<
+sys: S cb: 1
+line.substr: C1C
+sys: S cb: 1
+line.substr: L1C
+sys: S cb: 1
+line.substr: S1C
+(v) after version:    207fb
+(av) after version:  41205ab
+(v & av) after runby:    205ab
+Parse header record >R   12 C1C L1C S1C C1P L1P S1P C2C L2C S2C C2P L2P S2P      SYS / # / OBS TYPES<
+sys: R cb: 1
+line.substr: C1C
+sys: R cb: 1
+line.substr: L1C
+sys: R cb: 1
+line.substr: S1C
+sys: R cb: 1
+line.substr: C1P
+sys: R cb: 1
+line.substr: L1P
+sys: R cb: 1
+line.substr: S1P
+sys: R cb: 2
+line.substr: C2C
+sys: R cb: 2
+line.substr: L2C
+sys: R cb: 2
+line.substr: S2C
+sys: R cb: 2
+line.substr: C2P
+sys: R cb: 2
+line.substr: L2P
+sys: R cb: 2
+line.substr: S2P
+(v) after version:    207fb
+(av) after version:  41205ab
+(v & av) after runby:    205ab
+Parse header record >E   12 C1X L1X S1X C5X L5X S5X C7X L7X S7X C8X L8X S8X      SYS / # / OBS TYPES<
+sys: E cb: 1
+line.substr: C1X
+sys: E cb: 1
+line.substr: L1X
+sys: E cb: 1
+line.substr: S1X
+sys: E cb: 5
+line.substr: C5X
+sys: E cb: 5
+line.substr: L5X
+sys: E cb: 5
+line.substr: S5X
+sys: E cb: 7
+line.substr: C7X
+sys: E cb: 7
+line.substr: L7X
+sys: E cb: 7
+line.substr: S7X
+sys: E cb: 8
+line.substr: C8X
+sys: E cb: 8
+line.substr: L8X
+sys: E cb: 8
+line.substr: S8X
+(v) after version:    207fb
+(av) after version:  41205ab
+(v & av) after runby:    205ab
+Parse header record >C    9 C2I L2I S2I C7I L7I S7I C6I L6I S6I                  SYS / # / OBS TYPES<
+sys: C cb: 2
+line.substr: C2I
+sys: C cb: 2
+line.substr: L2I
+sys: C cb: 2
+line.substr: S2I
+sys: C cb: 7
+line.substr: C7I
+sys: C cb: 7
+line.substr: L7I
+sys: C cb: 7
+line.substr: S7I
+sys: C cb: 6
+line.substr: C6I
+sys: C cb: 6
+line.substr: L6I
+sys: C cb: 6
+line.substr: S6I
+(v) after version:    207fb
+(av) after version:  41205ab
+(v & av) after runby:    205ab
+Parse header record >    30.000                                                  INTERVAL<
+(v) after version:    a07fb
+(av) after version:  41205ab
+(v & av) after runby:    205ab
+Parse header record >  2016     1     5     0     0    0.0000000     GPS         TIME OF FIRST OBS<
+(v) after version:   1a07fb
+(av) after version:  41205ab
+(v & av) after runby:   1205ab
+Parse header record >G L2X -0.25000                                              SYS / PHASE SHIFT<
+(v) after version:  41a07fb
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >R L1P  0.25000                                              SYS / PHASE SHIFT<
+(v) after version:  41a07fb
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >R L2C -0.25000                                              SYS / PHASE SHIFT<
+(v) after version:  41a07fb
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >J L2X -0.25000                                              SYS / PHASE SHIFT<
+(v) after version:  41a07fb
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >GIOVE-A if present is mapped to satellite ID 51             COMMENT<
+(v) after version:  41a07ff
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >GIOVE-B if present is mapped to satellite ID 52             COMMENT<
+(v) after version:  41a07ff
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >DBHZ                                                        SIGNAL STRENGTH UNIT<
+(v) after version:  41e07ff
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+Parse header record >                                                            END OF HEADER<
+(v) after version:  41e07ff
+(av) after version:  41205ab
+(v & av) after runby:  41205ab
+(v & av) after parse:  41205ab
+---------------------------------- REQUIRED ----------------------------------
+Rinex Version  3.02,  File type OBSERVATION DATA,  System MIXED.
+Prgm: NetR9 4.85,  Run: 05-JAN-16 00:00:01,  By: IGN-RGP
+Marker name: BRST, Marker type: GEODETIC.
+Observer : Automatic,  Agency: IGN
+Rec#: 5046K71749,  Type: TRIMBLE NETR9,  Vers: 4.85
+Antenna # : 1441017048,  Type : TRM57971.00     NONE
+Position      (XYZ,m) : (4231162.7880, -332746.9200, 4745130.6890).
+Antenna Delta (HEN,m) : (2.0431, 0.0000, 0.0000).
+BeiDou Observation types (9):
+ Type #01 (C2I) L2 GPSI5 pseudorange
+ Type #02 (L2I) L2 GPSI5 phase
+ Type #03 (S2I) L2 GPSI5 snr
+ Type #04 (C7I) E5b BDSIL6 pseudorange
+ Type #05 (L7I) E5b BDSIL6 phase
+ Type #06 (S7I) E5b BDSIL6 snr
+ Type #07 (C6I) B6 BDSIL7 pseudorange
+ Type #08 (L6I) B6 BDSIL7 phase
+ Type #09 (S6I) B6 BDSIL7 snr
+Galileo Observation types (c):
+ Type #01 (C1X) L1 GALB+C pseudorange
+ Type #02 (L1X) L1 GALB+C phase
+ Type #03 (S1X) L1 GALB+C snr
+ Type #04 (C5X) L5 GALI+Q5 pseudorange
+ Type #05 (L5X) L5 GALI+Q5 phase
+ Type #06 (S5X) L5 GALI+Q5 snr
+ Type #07 (C7X) E5b GALI+Q5 pseudorange
+ Type #08 (L7X) E5b GALI+Q5 phase
+ Type #09 (S7X) E5b GALI+Q5 snr
+ Type #0a (C8X) L5a+b GALI+Q5 pseudorange
+ Type #0b (L8X) L5a+b GALI+Q5 phase
+ Type #0c (S8X) L5a+b GALI+Q5 snr
+GPS Observation types (c):
+ Type #01 (C1C) L1 GPSC/A pseudorange
+ Type #02 (L1C) L1 GPSC/A phase
+ Type #03 (S1C) L1 GPSC/A snr
+ Type #04 (C2W) L2 GPScodelessZ pseudorange
+ Type #05 (L2W) L2 GPScodelessZ phase
+ Type #06 (S2W) L2 GPScodelessZ snr
+ Type #07 (C2X) L2 GPSC2L+M pseudorange
+ Type #08 (L2X) L2 GPSC2L+M phase
+ Type #09 (S2X) L2 GPSC2L+M snr
+ Type #0a (C5X) L5 GPSI+Q5 pseudorange
+ Type #0b (L5X) L5 GPSI+Q5 phase
+ Type #0c (S5X) L5 GPSI+Q5 snr
+GLONASS Observation types (c):
+ Type #01 (C1C) G1 GLOC/A pseudorange
+ Type #02 (L1C) G1 GLOC/A phase
+ Type #03 (S1C) G1 GLOC/A snr
+ Type #04 (C1P) G1 GLOP pseudorange
+ Type #05 (L1P) G1 GLOP phase
+ Type #06 (S1P) G1 GLOP snr
+ Type #07 (C2C) G2 GLOC/A pseudorange
+ Type #08 (L2C) G2 GLOC/A phase
+ Type #09 (S2C) G2 GLOC/A snr
+ Type #0a (C2P) G2 GLOP pseudorange
+ Type #0b (L2P) G2 GLOP phase
+ Type #0c (S2P) G2 GLOP snr
+Geosync Observation types (3):
+ Type #01 (C1C) L1 SBASC/A pseudorange
+ Type #02 (L1C) L1 SBASC/A phase
+ Type #03 (S1C) L1 SBASC/A snr
+Time of first obs 2016/01/05 00:00:00.000 GPS
+(This header is (valid & allValid):  41205ab
+VALID)
+---------------------------------- OPTIONAL ----------------------------------
+Marker number : 10004M004
+Marker type : GEODETIC
+Signal Strenth Unit = DBHZ
+Interval =  30.000
+Phase shift correction for system G: -0.25000 cycles applied to obs type L2X GPS
+Phase shift correction for system J: -0.25000 cycles applied to obs type L2X QZSS
+Phase shift correction for system R:  0.25000 cycles applied to obs type L1P GLONASS
+Phase shift correction for system R: -0.25000 cycles applied to obs type L2C GLONASS
+Comments (2) :
+GIOVE-A if present is mapped to satellite ID 51
+GIOVE-B if present is mapped to satellite ID 52
+-------------------------------- END OF HEADER --------------------------------

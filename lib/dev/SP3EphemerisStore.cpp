@@ -210,6 +210,7 @@ namespace gpstk
             GPSTK_THROW(e);
          }
          strm.exceptions(ios::failbit);
+
          //cout << "Opened file " << filename << endl;
 
          // declare header and data
@@ -218,11 +219,13 @@ namespace gpstk
          // read the SP3 ephemeris header
          try {
             strm >> head;
+
          }
          catch(Exception& e) {
             e.addText("Error reading header of file " + filename + e.getText());
             GPSTK_RETHROW(e);
          }
+
          //cout << "Read header" << endl; head.dump();
 
          // check/save TimeSystem to storeTimeSystem

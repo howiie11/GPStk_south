@@ -228,17 +228,25 @@ namespace gpstk
          return toReturn;
 
       // first correct for leap seconds
+
       const CivilTime civt(ttag);
       double dt = TimeSystem::Correction(fromSys, targetSys,
                               civt.year, civt.month, civt.day);
+
+
       toReturn += dt;
       // the corrected timetag: now only the system, not the value, matters
       toReturn.setTimeSystem(targetSys);
 
       // look up the TimeSystemCorr in list, and do the conversion
+
+
       map<string, TimeSystemCorrection>::const_iterator it;
       for(it = mapTimeCorr.begin(); it != mapTimeCorr.end(); ++it) {
          if(it->second.isConverterFor(fromSys, targetSys)) {
+				// debug code vvv 
+				//it->second.dump(cout);
+				// debug code ^^^
             dt = it->second.Correction(ttag);
             toReturn += dt;
             return toReturn;
