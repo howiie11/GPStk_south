@@ -233,6 +233,8 @@ namespace gpstk
                      satList.push_back(RinexSatID(prn,RinexSatID::systemGPS));
                   else if(line[4*i] == 'R')
                      satList.push_back(RinexSatID(prn,RinexSatID::systemGlonass));
+						else if(line[4*i] == 'E')
+							satList.push_back(RinexSatID(prn,RinexSatID::systemGalileo));
                   else 
                   {
                      FFStreamError e("Invalid sat (PRN LIST): /" + label + "/");

@@ -25,6 +25,18 @@
 
 #include "SP3Header.hpp"
 #include "RinexClockHeader.hpp"
+#include "Rinex3ClockHeader.hpp"
+
+
+//============================================================================
+//
+//	Development 
+// 
+// 2016/12/16
+//	Add method 'loadRinex3ClockFile'
+// Lei Zhao, SGG, WHU
+//
+//============================================================================
 
 namespace gpstk
 {
@@ -58,6 +70,8 @@ namespace gpstk
 
       /// FileStore for the (optional) RINEX clock input files
       FileStore<RinexClockHeader> clkFiles;
+			// RINEX3
+      FileStore<Rinex3ClockHeader> clk3Files;
 
       /// flag indicating whether the clock store contains data from SP3 (true,
       /// the default) or Rinex clock (false) files
@@ -459,6 +473,14 @@ namespace gpstk
       /// @param filename name of file (RINEX clock format) to load 
       /// @throw if time step is inconsistent with previous value
       void loadRinexClockFile(const std::string& filename) throw(Exception);
+
+      /// Load a RINEX3 clock file; may set the 'have' bias and drift flags.
+      /// If clock store is set to use SP3 data, this will call useRinexClockData()
+      /// @param filename name of file (RINEX clock format) to load 
+      /// @throw if time step is inconsistent with previous value
+      void loadRinex3ClockFile(const std::string& filename) throw(Exception);
+
+
 
 
       /// Add a complete PositionRecord to the store; this is the preferred method

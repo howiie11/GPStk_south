@@ -185,8 +185,10 @@ namespace gpstk
             e.addText("Error reading header of file " + filename);
             GPSTK_RETHROW(e);
          }
-      // cout << "Read header" << endl; head.dump();
 
+			// Debug code vvv
+//       cout << "Read header" << endl; head.dump();
+			// Debug code ^^^ 
             // save in FileStore
          clkFiles.addFile(filename, head);
 
@@ -196,7 +198,9 @@ namespace gpstk
             while(strm >> data) 
             {
 
-            ///data.dump(cout);
+					// Debug code vvv
+//            data.dump(cout);
+					// Debug code ^^^ 
 
                if(data.datatype == std::string("AS")) 
                {

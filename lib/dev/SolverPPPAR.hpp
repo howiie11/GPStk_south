@@ -362,7 +362,7 @@ namespace gpstk
           *
           * @param interval    interval that restart the filter.
           */
-      virtual SolverPPPAR& setReInitialize(double reInit)
+      virtual SolverPPPAR& setReInitialize(bool reInit)
       {
          reInitialize = reInit;
          return (*this);

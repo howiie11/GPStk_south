@@ -124,6 +124,10 @@ namespace gpstk
          {
             sat = RinexSatID(prn,RinexSatID::systemGlonass);
          }
+			else if(site[0] == 'E')
+			{
+				sat = RinexSatID(prn,RinexSatID::systemGalileo);
+			}
          else 
          {
             FFStreamError e("Invalid sat : /" + site + "/");

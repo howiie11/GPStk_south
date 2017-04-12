@@ -73,7 +73,8 @@ namespace gpstk
        *
        */
    SolverPPP::SolverPPP(bool useNEU)
-      : firstTime(true), converged(false), bufferSize(4)
+      : firstTime(true), converged(false), bufferSize(20),
+        reInitialize(false), reIntialInterv(864000000.0)
    {
 
          // Set the equation system structure
@@ -195,6 +196,7 @@ of weightVector");
 
       if (!(weightMatrix.isSquare()))
       {
+		 std::cout<<"row="<< weightMatrix.rows()<<",col="<<weightMatrix.cols()<<std::endl;
          InvalidSolver e("Weight matrix is not square");
          GPSTK_THROW(e);
       }
@@ -353,6 +355,12 @@ covariance matrix.");
 
          // Get the number of satellites currently visible
       int numCurrentSV( gData.numSats() );
+
+		if( numCurrentSV < 4 )
+		{
+			SVNumException e("sat num is more than 4");
+			GPSTK_THROW(e);
+		}
 
       try
       {
@@ -513,7 +521,7 @@ covariance matrix.");
             ++count2;
          }
 
-         double sod( (gData.header.epoch).getSecondOfDay() );
+//         double sod( (gData.header.epoch).getSecondOfDay() );
 
             // Feed the filter with the correct state and covariance matrix
          if(firstTime)
@@ -548,6 +556,11 @@ covariance matrix.");
                // Reset Kalman filter
             kFilter.Reset( initialState, initialErrorCovariance );
 
+               // record the first epoch 
+            firstEpoch = gData.header.epoch;
+
+				double sod( (gData.header.epoch).getSecondOfDay() );
+
                // No longer first time
             firstTime = false;
 
@@ -559,93 +572,249 @@ covariance matrix.");
 
                // Start time to compute the convergence time
             startTime = sod;
+            startTimeVec.push_back(startTime);
 
          }
          else
          {
+				// vvv Try to add reinitialization code 
+				
+					// Current Epoch
+				CommonTime currEpoch( gData.header.epoch );
+
+					// Offset
+				double timeOffset( currEpoch - firstEpoch ); 
+
+				double sod( (gData.header.epoch).getSecondOfDay() );
+
+				double tolerance(0.5);
+				double lowerBound( std::abs(tolerance) );
+				double upperBound( std::abs(reIntialInterv - tolerance) );
 
                // Adapt the size to the current number of unknowns
             Vector<double> currentState(numUnknowns, 0.0);
             Matrix<double> currentErrorCov(numUnknowns, numUnknowns, 0.0);
 
-
-               // Set first part of current state vector and covariance matrix
-            for( int i=0; i<numVar; i++ )
-            {
-               currentState(i) = solution(i);
-
-                  // This fills the upper left quadrant of covariance matrix
-               for( int j=0; j<numVar; j++ )
-               {
-                  currentErrorCov(i,j) =  covMatrix(i,j);
-               }
-            }
+				if( reInitialize &&
+					 ( ( (int)(timeOffset) % (int)(reIntialInterv) < lowerBound ) ||
+					 ( (int)(timeOffset) % (int)(reIntialInterv) > upperBound ) ) )
+				{
+					// Debug code vvv
+					cout << "reInitialize here" << endl;
+					// Debug code ^^^ 
 
 
-               // Temporary satellite set
-            SatIDSet tempSatSet(currSatSet);
+						// reset solution
+					resetSol = true;
+						// Record the restart time
+					converged = false;
+					startTime = sod;
+					startTimeVec.push_back(startTime);
 
-               // Fill in the rest of state vector and covariance matrix
-               // These are values that depend on satellites being processed
-            int c1(numVar);
-            for( SatIDSet::const_iterator itSat = currSatSet.begin();
-                 itSat != currSatSet.end();
-                 ++itSat )
-            {
-                  // Put ambiguities into state vector
-               currentState(c1) = ambiguityMap[*itSat];
+//						// Firstly, fill the state and covariance matrix for
+//						// source-indexed variables
+//					for( int i=0; i<numVar; i++ )
+//					{
+//						currentState(i) = solution(i);
+//
+//							// This fills the upper left quadrant of covariance matrix
+//						for( int j=0; j<numVar; j++ )
+//						{
+//							currentErrorCov(i,j) =  covMatrix(i,j);
+//						}		// End of ' for( int j=0; j<numVar; j++ ) '
+//					}  // End of ' for( int i=0; i<numVar; i++ ) '
+
+						// First, the zenital wet tropospheric delay
+					currentErrorCov(0,0) = 0.25;          // (0.5 m)**2
+
+						// Second, the coordinates
+					for( int i=1; i<4; i++ )
+				   {
+						currentErrorCov(i,i) = 10000.0;    // (100 m)**2
+				   }
+
+						// Third, the receiver clock
+				   currentErrorCov(4,4) = 9.0e10;        // (300 km)**2
+
+					
+						// Then, reset the ambiguity, which is equivalent
+						// to introducing cycle slips for all satellites.
+					for( int i=numVar; i<numUnknowns; i++ )
+					{
+						currentErrorCov(i,i) = 4.0e14;     // (20000 km)**2
+					}
+				}
+				else
+				{		// update as common 
 
 
-               if( ambCovMap.find( (*itSat) ) != ambCovMap.end() )
-               {
+						// Set first part of current state vector and covariance matrix
+	            for( int i=0; i<numVar; i++ )
+	            {
+	               currentState(i) = solution(i);
+	
+	                  // This fills the upper left quadrant of covariance matrix
+	               for( int j=0; j<numVar; j++ )
+	               {
+	                  currentErrorCov(i,j) =  covMatrix(i,j);
+	               }
+	            }
+	
+	
+	               // Temporary satellite set
+	            SatIDSet tempSatSet(currSatSet);
+	
+	               // Fill in the rest of state vector and covariance matrix
+	               // These are values that depend on satellites being processed
+	            int c1(numVar);
+	            for( SatIDSet::const_iterator itSat = currSatSet.begin();
+	                 itSat != currSatSet.end();
+	                 ++itSat )
+	            {
+	                  // Put ambiguities into state vector
+	               currentState(c1) = ambiguityMap[*itSat];
+	
+	
+	               if( ambCovMap.find( (*itSat) ) != ambCovMap.end() )
+	               {
+	
+	                     // Fill the diagonal element
+	                  currentErrorCov(c1,c1) = ambCovMap[*itSat].aCovMap[*itSat];
+	               }
+	               else
+	               {
+	                  currentErrorCov(c1,c1) = 4.0e+14;
+	               }
+	
+	                  // Put ambiguities covariance values into covariance matrix
+	                  // This fills the lower right quadrant of covariance matrix
+	               int c2(c1+1);
+	
+	                  // Remove current sat from 'tempSatSet'
+	               tempSatSet.erase( (*itSat) ); 
+	
+	               for( SatIDSet::const_iterator itSat2 = tempSatSet.begin(); 
+	                    itSat2 != tempSatSet.end(); 
+	                    ++itSat2 )
+	               {
+	
+	                  currentErrorCov(c1,c2) = ambCovMap[*itSat].aCovMap[*itSat2];
+	                  currentErrorCov(c2,c1) = ambCovMap[*itSat].aCovMap[*itSat2];
+	
+	                  ++c2;
+	               }
+	
+	                  // Put variables X ambiguities covariances into
+	                  // covariance matrix. This fills the lower left and upper
+	                  // right quadrants of covariance matrix
+	               int c3(0);
+	               TypeIDSet::const_iterator itType;
+	               for( itType  = defaultEqDef.body.begin();
+	                    itType != defaultEqDef.body.end();
+	                    ++itType )
+	               {
+	
+	                  currentErrorCov(c1,c3) = ambCovMap[*itSat].vCovMap[*itType];
+	                  currentErrorCov(c3,c1) = ambCovMap[*itSat].vCovMap[*itType];
+	
+	                  ++c3;
+	               }
+	
+	               ++c1;
+	            }
+				}  // End of 'if(reInitialize&&...)'
 
-                     // Fill the diagonal element
-                  currentErrorCov(c1,c1) = ambCovMap[*itSat].aCovMap[*itSat];
-               }
-               else
-               {
-                  currentErrorCov(c1,c1) = 4.0e+14;
-               }
+               
+					// Reset Kalman filter to current state and covariance matrix
+	         kFilter.Reset( currentState, currentErrorCov );
 
-                  // Put ambiguities covariance values into covariance matrix
-                  // This fills the lower right quadrant of covariance matrix
-               int c2(c1+1);
+				// ^^^ Try to add reinitialization code 
 
-                  // Remove current sat from 'tempSatSet'
-               tempSatSet.erase( (*itSat) ); 
 
-               for( SatIDSet::const_iterator itSat2 = tempSatSet.begin(); 
-                    itSat2 != tempSatSet.end(); 
-                    ++itSat2 )
-               {
 
-                  currentErrorCov(c1,c2) = ambCovMap[*itSat].aCovMap[*itSat2];
-                  currentErrorCov(c2,c1) = ambCovMap[*itSat].aCovMap[*itSat2];
 
-                  ++c2;
-               }
-
-                  // Put variables X ambiguities covariances into
-                  // covariance matrix. This fills the lower left and upper
-                  // right quadrants of covariance matrix
-               int c3(0);
-               TypeIDSet::const_iterator itType;
-               for( itType  = defaultEqDef.body.begin();
-                    itType != defaultEqDef.body.end();
-                    ++itType )
-               {
-
-                  currentErrorCov(c1,c3) = ambCovMap[*itSat].vCovMap[*itType];
-                  currentErrorCov(c3,c1) = ambCovMap[*itSat].vCovMap[*itType];
-
-                  ++c3;
-               }
-
-               ++c1;
-            }
-
-               // Reset Kalman filter to current state and covariance matrix
-            kFilter.Reset( currentState, currentErrorCov );
+//               // Adapt the size to the current number of unknowns
+//            Vector<double> currentState(numUnknowns, 0.0);
+//            Matrix<double> currentErrorCov(numUnknowns, numUnknowns, 0.0);
+//
+//
+//               // Set first part of current state vector and covariance matrix
+//            for( int i=0; i<numVar; i++ )
+//            {
+//               currentState(i) = solution(i);
+//
+//                  // This fills the upper left quadrant of covariance matrix
+//               for( int j=0; j<numVar; j++ )
+//               {
+//                  currentErrorCov(i,j) =  covMatrix(i,j);
+//               }
+//            }
+//
+//
+//               // Temporary satellite set
+//            SatIDSet tempSatSet(currSatSet);
+//
+//               // Fill in the rest of state vector and covariance matrix
+//               // These are values that depend on satellites being processed
+//            int c1(numVar);
+//            for( SatIDSet::const_iterator itSat = currSatSet.begin();
+//                 itSat != currSatSet.end();
+//                 ++itSat )
+//            {
+//                  // Put ambiguities into state vector
+//               currentState(c1) = ambiguityMap[*itSat];
+//
+//
+//               if( ambCovMap.find( (*itSat) ) != ambCovMap.end() )
+//               {
+//
+//                     // Fill the diagonal element
+//                  currentErrorCov(c1,c1) = ambCovMap[*itSat].aCovMap[*itSat];
+//               }
+//               else
+//               {
+//                  currentErrorCov(c1,c1) = 4.0e+14;
+//               }
+//
+//                  // Put ambiguities covariance values into covariance matrix
+//                  // This fills the lower right quadrant of covariance matrix
+//               int c2(c1+1);
+//
+//                  // Remove current sat from 'tempSatSet'
+//               tempSatSet.erase( (*itSat) ); 
+//
+//               for( SatIDSet::const_iterator itSat2 = tempSatSet.begin(); 
+//                    itSat2 != tempSatSet.end(); 
+//                    ++itSat2 )
+//               {
+//
+//                  currentErrorCov(c1,c2) = ambCovMap[*itSat].aCovMap[*itSat2];
+//                  currentErrorCov(c2,c1) = ambCovMap[*itSat].aCovMap[*itSat2];
+//
+//                  ++c2;
+//               }
+//
+//                  // Put variables X ambiguities covariances into
+//                  // covariance matrix. This fills the lower left and upper
+//                  // right quadrants of covariance matrix
+//               int c3(0);
+//               TypeIDSet::const_iterator itType;
+//               for( itType  = defaultEqDef.body.begin();
+//                    itType != defaultEqDef.body.end();
+//                    ++itType )
+//               {
+//
+//                  currentErrorCov(c1,c3) = ambCovMap[*itSat].vCovMap[*itType];
+//                  currentErrorCov(c3,c1) = ambCovMap[*itSat].vCovMap[*itType];
+//
+//                  ++c3;
+//               }
+//
+//               ++c1;
+//            }
+//
+//               // Reset Kalman filter to current state and covariance matrix
+//            kFilter.Reset( currentState, currentErrorCov );
 
 
          }  // End of 'if(firstTime)'
@@ -736,6 +905,9 @@ covariance matrix.");
          {
             ambVec(i) = solution(numVar + i) + postfitPhase(i);
          }
+
+				// Let's compute the statistics
+			double sod( (gData.header.epoch).getSecondOfDay() );
 
          double dx = solution(1);
          double dy = solution(2);

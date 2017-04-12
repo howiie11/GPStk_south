@@ -31,8 +31,8 @@
 
 
 #include "BasicModel.hpp"
-#include "geometry.hpp"
 #include "YDSTime.hpp"
+#include "GNSSconstants.hpp"
 
 using namespace std;
 
@@ -201,6 +201,12 @@ namespace gpstk
 
                // When using pseudorange method, this is 1.0
             (*stv).second[TypeID::cdt] = 1.0;
+
+					// We insert ISB coefficients 
+				if( (stv->first).system == SatID::systemGalileo )
+				{
+					(*stv).second[TypeID::ISBEG] = 1.0;
+				}
 
                // Now we have to add the new values to the data structure
             (*stv).second[TypeID::rho] = cerange.rawrange;

@@ -48,7 +48,7 @@ namespace gpstk
        *
        * @code
        *
-       *    RinexUPDStream ss("igs14080.clk_30s");
+       *    RinexUPDStream ss("whu14080.upd");
        *    RinexUPDHeader sh;
        *    RinexUPDData sd;
        *
@@ -59,7 +59,7 @@ namespace gpstk
        *       // Interesting stuff...
        *    }    
        *
-       *    RinexUPDStream ssout("myfile.clk_30s", ios::out);
+       *    RinexUPDStream ssout("myfile.upd", ios::out);
        *    ssout << sh;
        *    for(...) 
        *    {
@@ -98,7 +98,7 @@ namespace gpstk
       RinexSatID sat;         ///< Satellite ID        (if AS)
       std::string site;       ///< Site label (4-char) (if AR)
       CommonTime time;        ///< Time of epoch for this record
-      double updSatMW;          ///< Melboune-wubbena upd in meters 
+      double updSatMW;          ///< Melbourne-wubbena upd in meters 
       double updSatLC;          ///< LC upd sigma in meters 
 
          //@}

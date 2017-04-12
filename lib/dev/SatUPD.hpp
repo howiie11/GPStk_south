@@ -43,7 +43,7 @@ namespace gpstk
    public:
 
          /// Default constructor
-      SatUPD()  
+      SatUPD() : updSatMW(0.0), updSatLC(0.0) 
       {};
 
          /// Destructor.

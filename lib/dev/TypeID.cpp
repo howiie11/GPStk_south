@@ -111,6 +111,7 @@ namespace gpstk
 
       tStrings[Q1]       = "Q1";                                                           
       tStrings[Q2]       = "Q2";                                                           
+      tStrings[Q5]       = "Q5";                                                           
 
       tStrings[L1dot]      = "L1dot";
       tStrings[L1dot2]     = "L1dot2";
@@ -192,6 +193,9 @@ namespace gpstk
       tStrings[elevation]  = "elevation";
       tStrings[azimuth]    = "azimuth";
 
+		tStrings[ISBEG]		= "ISBGalileoGPS";
+		tStrings[ISBCG]		= "ISBBDSGPS";
+
       tStrings[deltaTropo] = "deltaTropo";
       tStrings[deltaIono]  = "deltaIono";
 
@@ -259,6 +263,7 @@ namespace gpstk
       tStrings[updMW]        = "updMW";
       tStrings[updSatL1]     = "updSatL1";
       tStrings[updSatL2]     = "updSatL2";
+      tStrings[updSatL5]     = "updSatL5";
       tStrings[updSatWL] = "updSatWL";
       tStrings[updSatLC]     = "updSatLC";
       tStrings[updSatMW]     = "updSatMW";
@@ -407,6 +412,10 @@ namespace gpstk
       tStrings[AntOffU]    = "AntOffU";
       tStrings[AntOffN]    = "AntOffN";
       tStrings[AntOffE]    = "AntOffE";
+      tStrings[Temp]       = "Temp";
+      tStrings[Pres]       = "Pres";
+      tStrings[Rhum]       = "Rhum";
+      tStrings[Hgt]        = "Hgt";
       tStrings[sigma]      = "sigma";
       tStrings[iura]       = "iura";
       tStrings[Action]     = "Action";

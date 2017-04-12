@@ -34,8 +34,36 @@
 //
 //  2016/01/12  
 //  finish this class, but to be tested!
-//
-//
+//  
+//	 2016.11.09
+//  Several notes:
+//  1. inverseChol() can not inverse an asymmetrical matrix, in that case, 
+//     inverse() should be employed.
+//  2. TypeIDSet can not keep the types you added in an order of your insertion.
+//     If you want to sequence the types with your order, TypeIDSet is useless.  
+
+//  2016.11.10
+//	 This version attempts to solve the equation system like this:
+//  ===
+//  P1 = ?dx +?dy +?dz + dtr' - dts_IF + Trop + r1*Ms*vtec + e 
+//  P2 = ?dx +?dy +?dz + dtr' + DCBr - dts_IF + Trop + r2*Ms*vtec + e
+//  L1 = ?dx +?dy +?dz + dtr' - dts_IF + Trop - r1*Ms*vtec + 
+//			lambda1*N1 + ur,l1 - us,l1 - br,p1 + bs,IF + e
+//  L2 = ?dx +?dy +?dz + dtr' - dts_IF + Trop - r2*Ms*vtec + 
+//			lambda1*N2 + ur,l2 - us,l2 - br,p1 + bs,IF + e
+//  Iono = Ms*vtec
+//  0 = a0 + a1*dL + a2*dB - vtec (so called spatial constraint) 
+//  dcb  = DCBr
+//  trop = Trop
+//  ===
+//  where: 
+//	 dtr' = dtr + br,p1 
+//	 dts_IF = dts + bs,IF 
+//	 ri   = f1^2/fi^2
+//  Iono is from IONEX file
+//  dcb and trop are prior value with appropriate variances 
+//  ===
+
 //============================================================================
 
 
@@ -425,13 +453,15 @@ namespace gpstk
       Vector<double> measVector;
 
          /// Source-indexed TypeID set
-      TypeIDSet srcIndexedTypes;
+//      TypeIDSet srcIndexedTypes;
+		TypeIDList srcIndexedTypes;
 
          /// Observable-independent TypeID set
       TypeIDSet coreTypes;
 
          /// Satellite-indexed TypeID set
-      TypeIDSet satIndexedTypes;
+//      TypeIDSet satIndexedTypes;
+		TypeIDList satIndexedTypes; 
 
          /// Global set of unknowns
       VariableSet varUnknowns;

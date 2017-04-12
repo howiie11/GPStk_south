@@ -38,7 +38,7 @@
 //
 //  - Add 'zwd', which will be useful for RTK correction computation.
 //    shjzhang, 2014/06/17
-//
+//  
 //============================================================================
 
 
@@ -174,7 +174,6 @@ namespace gpstk
 
          /// Flag indicating whehter this station is static or kinematic 
       bool staticFlag;
-
 
          /// Zenith wet delay
       std::map<TypeID, double> zwdMap;

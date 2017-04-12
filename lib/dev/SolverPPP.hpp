@@ -486,6 +486,29 @@ namespace gpstk
       virtual SolverPPP& setBufferSize(int size )
       { bufferSize = size; return(*this); };
 
+		   /** Set restart interval.
+          *
+          * @param interval    interval that restart the filter.
+          */
+      virtual SolverPPP& setRestartInterval(double interval)
+      {
+         reIntialInterv = interval;
+         return (*this);
+      };
+
+         /** Set restart interval.
+          *
+          * @param interval    interval that restart the filter.
+          */
+      virtual SolverPPP& setReInitialize(bool reInit)
+      {
+         reInitialize = reInit;
+         return (*this);
+      };
+
+
+
+
          /** Return the converged flag
           */
       virtual bool getConverged() const
@@ -510,6 +533,13 @@ namespace gpstk
 
 
    private:
+
+			/// Whether turn on the 'reInitialize' or not
+      bool reInitialize;
+
+         /// Interval to restart the filter
+      double reIntialInterv;
+
 
 
          /// Number of variables
@@ -540,10 +570,15 @@ namespace gpstk
 
       double startTime;
 
+      std::vector< double > startTimeVec;
+
       std::vector< double > ttfcVec;
 
          /// Buffer to store the solution drou 
       std::deque<bool> convergBuffer;
+
+         /// Variable to indicate the first epoch
+      CommonTime firstEpoch;
 
          /// Pointer to stochastic model for dx (or dLat) coordinate
       StochasticModel* pCoordXStoModel;
@@ -589,6 +624,7 @@ namespace gpstk
 
          /// Boolean indicating if this filter was run at least once
       bool firstTime;
+
 
 
          /// Set with all satellites being processed this epoch

@@ -30,6 +30,8 @@
 
 #include "CorrectUPDs.hpp"
 
+#include "CivilTime.hpp"
+
 namespace gpstk
 {
          // Index initially assigned to this class
@@ -65,9 +67,66 @@ namespace gpstk
                  stv != gData.end(); 
                  ++stv)
             {
-                  
+//					// Debug code vvv
+//					SatID sat(stv->first);
+//					SatIDSet targetSatSet;
+//					SatID GPS1(1,SatID::systemGPS);
+//					SatID GPS2(2,SatID::systemGPS);
+//					SatID GPS3(3,SatID::systemGPS);
+//					SatID GPS4(4,SatID::systemGPS);
+//					SatID GPS5(5,SatID::systemGPS);
+//					SatID GPS6(6,SatID::systemGPS);
+//					SatID GPS7(7,SatID::systemGPS);
+//					SatID GPS8(8,SatID::systemGPS);
+//					SatID GPS9(9,SatID::systemGPS);
+//					SatID GPS10(10,SatID::systemGPS);
+//					SatID GPS11(11,SatID::systemGPS);
+//					SatID GPS12(12,SatID::systemGPS);
+//					SatID GPS13(13,SatID::systemGPS);
+//					SatID GPS14(14,SatID::systemGPS);
+//					SatID GPS15(15,SatID::systemGPS);
+//					SatID GPS17(17,SatID::systemGPS);
+//					SatID GPS24(24,SatID::systemGPS);
+//					SatID GPS25(25,SatID::systemGPS);
+//					SatID GPS27(27,SatID::systemGPS);
+//					SatID GPS28(28,SatID::systemGPS);
+//					SatID GPS29(29,SatID::systemGPS);
+//					SatID GPS32(32,SatID::systemGPS);
+////					targetSatSet.insert(GPS1);
+//// 				targetSatSet.insert(GPS2);
+//// 				targetSatSet.insert(GPS3);
+//// 				targetSatSet.insert(GPS4);
+//// 				targetSatSet.insert(GPS5);
+//// 				targetSatSet.insert(GPS6);
+//// 				targetSatSet.insert(GPS7);
+//// 				targetSatSet.insert(GPS8);
+//// 				targetSatSet.insert(GPS9);
+// 				targetSatSet.insert(GPS12);
+// 				targetSatSet.insert(GPS15);
+////					targetSatSet.insert(GPS9);
+//					std::cout << "targetSatID: " << std::endl;
+//					for( SatIDSet::iterator it = targetSatSet.begin();
+//						  it != targetSatSet.end();
+//						  ++it )
+//					{
+//						std::cout << *it << std::endl; 
+//					}
+//					
+//					SatIDSet::iterator ite = targetSatSet.find( sat );
+//					if( ite == targetSatSet.end() )  
+//					{
+//							// Can not find this sat
+////						std::cout << "Can not find sat: " << sat << std::endl;
+//						continue;
+//					}
+//
+////					// Debug code ^^^ 
                try
                {
+//						// Debug code vvv
+//						std::cout << "Try to find upd of target sat set" << std::endl;
+//						std::cout << (*stv).first << std::endl;
+//						// Debug code ^^^ 
                      // Get satellite upds from 'RinexUPDStore'
                   satUPD = (*pUPDStore).getValue( (*stv).first, time );
 
@@ -76,9 +135,9 @@ namespace gpstk
                {
                      // If some problem appears, then schedule this satellite
                      // for removal
-                  satRejectedSet.insert( (*stv).first );
+						 satRejectedSet.insert( (*stv).first );
 
-                  continue;    // Skip this SV if problems arise
+                   continue;    // Skip this SV if problems arise
 
                }
 
@@ -90,13 +149,22 @@ namespace gpstk
                   //
                   // Here, change the unit to meters firstly.
                   // 2015/09/15
-//             satUPD.updSatMW = satUPD.updSatMW*0.861918400322;
-//             satUPD.updSatLC = satUPD.updSatLC*0.106953378142;
+					// Debug code vvv
+						// I just want to output the time with upd
+					CivilTime ct( time );
+//					cout << (*stv).first  << "upd time: " << endl;
+//					cout << ct.hour << " " << ct.minute << " " 
+//						<< ct.minute << endl;
+//					cout << satUPD << endl;
 
-                  // Now, correct the Melboune-Wubbena combination observables
+					// Debug code ^^^ 
+					satUPD.updSatMW = satUPD.updSatMW*0.861918400322;
+					satUPD.updSatLC = satUPD.updSatLC*0.106953378142;
+
+//                  // Now, correct the Melboune-Wubbena combination observables
                (*stv).second[TypeID::updSatMW] = satUPD.updSatMW;
-               (*stv).second[TypeID::updSatWL] = satUPD.updSatMW;
-               (*stv).second[TypeID::updSatLC] = satUPD.updSatLC;
+//               (*stv).second[TypeID::updSatWL] = satUPD.updSatMW;
+					(*stv).second[TypeID::updSatLC] = satUPD.updSatLC;
 
                double f1 = 1575.42e6;
                double f2 = 1227.60e6;

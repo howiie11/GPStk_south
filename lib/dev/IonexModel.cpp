@@ -210,8 +210,8 @@ namespace gpstk
                diffLat = range(rxIPP, rxIPP2);
                diffLon = range(rxIPP, rxIPP3);
 
-               cout << "diffLat" << diffLat << endl;
-               cout << "diffLon" << diffLon << endl;
+//               cout << "diffLat" << diffLat << endl;
+//               cout << "diffLon" << diffLon << endl;
 
                   // Insert the range difference in latitude and longitude
                (*stv).second[TypeID::diffLat]  = diffLat;

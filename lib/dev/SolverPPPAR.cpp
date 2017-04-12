@@ -97,7 +97,7 @@ namespace gpstk
        *                 if false (the default), will compute dx, dy, dz.
        */
    SolverPPPAR::SolverPPPAR(bool useNEU )
-      : firstTime(true), converged(false), bufferSize(4),
+      : firstTime(true), converged(false), bufferSize(20),
         reInitialize(false), reIntialInterv(864000000.0)
    {
 
@@ -599,24 +599,42 @@ namespace gpstk
                 ( ( (int)(timeOffset) % (int)(reIntialInterv) < lowerBound ) || 
                   ( (int)(timeOffset) % (int)(reIntialInterv) > upperBound ) ) )
             {
+
+					// Debug code vvv
+					cout << "reInitialLize here!!!" << endl;
+					// Debug code ^^^ 
+
                   // set the flags for ttff/ttfs statistics
                resetL1 = resetL2 = resetWL = true;
                converged = false;
                startTime = sod;
                startTimeVec.push_back(startTime);
 
-                  // Firstly, fill the state and covariance matrix for 
-                  // source-indexed variables
-               for( int i=0; i<numVar; i++ )
-               {
-                  currentState(i) = solution(i);
+//                  // Firstly, fill the state and covariance matrix for 
+//                  // source-indexed variables
+//               for( int i=0; i<numVar; i++ )
+//               {
+//                  currentState(i) = solution(i);
+//
+//                     // This fills the upper left quadrant of covariance matrix
+//                  for( int j=0; j<numVar; j++ )
+//                  {
+//                     currentErrorCov(i,j) =  covMatrix(i,j);
+//                  }
+//               }
 
-                     // This fills the upper left quadrant of covariance matrix
-                  for( int j=0; j<numVar; j++ )
-                  {
-                     currentErrorCov(i,j) =  covMatrix(i,j);
-                  }
-               }
+						// First, the zenital wet tropospheric delay
+					currentErrorCov(0,0) = 0.25;          // (0.5 m)**2
+
+						// Second, the coordinates
+					for( int i=1; i<4; i++ )
+				   {
+						currentErrorCov(i,i) = 10000.0;    // (100 m)**2
+				   }
+
+						// Third, the receiver clock
+				   currentErrorCov(4,4) = 9.0e10;        // (300 km)**2
+
 
                   // Then, reset the ambiguity, which is equivalent
                   // to introducing cycle slips for all satellites.
@@ -1881,6 +1899,21 @@ of qMatrix");
             }  // End of 'if(ratioWL > 3.0)'
 
          }
+
+///////////////////////////////////////////////////////
+//
+//       PartialAR par;       
+//
+//       par(x,CovX,varUnknowns,partialVar);
+//
+//       par.setSolution();
+//       par.setCovariance();
+//       par.setTotalVars();
+//       par.setPartialVars();
+//
+//       PartialAR(x, CovX, varUnknowns, partialVar );
+//
+///////////////////////////////////////////////////////
             
              //
              // Insert ambiguity fixed flags

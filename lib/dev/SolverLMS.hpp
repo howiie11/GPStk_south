@@ -234,6 +234,7 @@ namespace gpstk
           *  GNSS data structures.
           */
       gnssEquationDefinition defaultEqDef;
+      gnssEquationDefinition2 defaultEqDef2;
 
 
    }; // End of class 'SolverLMS'

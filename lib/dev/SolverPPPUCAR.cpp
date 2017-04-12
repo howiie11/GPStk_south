@@ -91,7 +91,7 @@ namespace gpstk
        *                 if false (the default), will compute dx, dy, dz.
        */
    SolverPPPUCAR::SolverPPPUCAR(bool useNEU, int polyOrder)
-      : firstTime(true), converged(false), bufferSize(4),
+      : firstTime(true), converged(false), bufferSize(4), polyOrder( polyOrder ),
         aprioriIonoVar(100.0), aprioriSpatialVar(0.09),aprioriTropoVar(1.0),
         aprioriDCBVar(0.01),
         reInitialize(false), reInitialInterval(864000000.0),
@@ -264,9 +264,9 @@ namespace gpstk
 
       try
       {
-         cout << static_cast<YDSTime>(gData.header.epoch).year  << "  ";     
-         cout << static_cast<YDSTime>(gData.header.epoch).doy   << "  ";  
-         cout << static_cast<YDSTime>(gData.header.epoch).sod   << endl; 
+//         cout << static_cast<YDSTime>(gData.header.epoch).year  << "  ";     
+//         cout << static_cast<YDSTime>(gData.header.epoch).doy   << "  ";  
+//         cout << static_cast<YDSTime>(gData.header.epoch).sod   << endl; 
 
          string line;
          CivilTime civTime(gData.header.epoch);
@@ -289,7 +289,7 @@ namespace gpstk
          ionoUnks.clear();
 
             // Now, Let's create the satellite-related unknowns
-         for(TypeIDSet::const_iterator itType = satIndexedTypes.begin();
+         for(TypeIDList::const_iterator itType = satIndexedTypes.begin();
              itType != satIndexedTypes.end();
              ++itType)
          {
@@ -315,16 +315,20 @@ namespace gpstk
              }
          }
 
-         for( VariableSet::const_iterator itVar = varUnknowns.begin();
-              itVar != varUnknowns.end();
-              ++itVar )
-         {
-             cout << asString(*itVar) << endl;
-         }
+//         for( VariableSet::const_iterator itVar = varUnknowns.begin();
+//              itVar != varUnknowns.end();
+//              ++itVar )
+//         {
+//             cout << asString(*itVar) << endl;
+//         }
 
 
             // Get the number of satellites currently visible
          numCurrentSV =  gData.numSats();
+
+			// Debug code vvv
+			cout << "Num of satellites: " << numCurrentSV << endl;
+			// Debug code ^^^ 
 
             // Total measurement number
             // 4*numCurrentSV  P1/P2/L1/L2
@@ -345,6 +349,16 @@ namespace gpstk
             // 3 inst bias
             // 3 or 6 polynomial coefficients according to the 'polyOrder'
          numVar = srcIndexedTypes.size();
+
+//			// Debug code vvv
+//			for( TypeIDList::iterator it = srcIndexedTypes.begin();
+//				  it != srcIndexedTypes.end();
+//				  ++it )
+//			{
+//				cout << *it << endl;
+//			}
+
+			// Debug code ^^^
 
             // Total number of unknowns is defined as :
             // src indexed variables   numVar 
@@ -448,6 +462,7 @@ namespace gpstk
          double aprioriDCB;
 
          aprioriDCB = ( gData.header.source.zwdMap[TypeID::recInstP2] );
+
 
             // Warning
             // if there are no 'aprioriDCB' data, 'ZERO' data will be assigned
@@ -673,8 +688,8 @@ namespace gpstk
          Vector<double> diffLonVec(gData.getVectorOfTypeID(TypeID::diffLon));
          Vector<double> diffLatVec(gData.getVectorOfTypeID(TypeID::diffLat));
 
-         cout << "numVar" << numVar << endl;
-         cout << "polyOrder" << polyOrder << endl;
+//         cout << "numVar" << numVar << endl;
+//         cout << "polyOrder" << polyOrder << endl;
 
             // Now, fill the coefficients related to 'ai(i=0,...,5)'
          for(int i=0; i<numCurrentSV;i++)
@@ -726,6 +741,7 @@ namespace gpstk
             // 3 inst bias
             // Now, fill the coefficients for 'recInstP2'
          hMatrix( 6*numCurrentSV + 1, 5 ) = 1.0;
+         //hMatrix( 6*numCurrentSV + 1, 5 ) = -1.0;
 
             ////////////////////////////////////////////////
             //          
@@ -891,6 +907,13 @@ namespace gpstk
                                                    numUnknowns,
                                                    0.0 );
 
+//				// Debug code vvv
+//				for( int i=0; i<numUnknowns; i++)
+//				{
+//					initialErrorCovariance(i,i) = 4.0e14;
+//				}
+//				// Debug code ^^^
+
                // Fill the initialErrorCovariance matrix
 
                // First, the zenital wet tropospheric delay
@@ -899,11 +922,17 @@ namespace gpstk
                // Second, the coordinates
             for( int i=1; i<4; i++ )
             {
-               initialErrorCovariance(i,i) = 1.0;       // (1.0 m)**2
+               initialErrorCovariance(i,i) = 1.0e4;       // (1.0 m)**2
             }
 
+					// The receiver clock error
             initialErrorCovariance(4,4) = 9.0e10;
-            initialErrorCovariance(5,5) = 9.0e10;
+
+					// DCB(P1-P2)
+            //initialErrorCovariance(5,5) = 9.0e10;
+            initialErrorCovariance(5,5) = 1;
+
+					// Upd on L1 and L2 signal at receiver end 
             initialErrorCovariance(6,6) = 9.0e10;
             initialErrorCovariance(7,7) = 9.0e10;
 
@@ -960,13 +989,13 @@ namespace gpstk
                // Current Epoch
             CommonTime currEpoch(gData.header.epoch);
 
-            cout << "currEpoch" << currEpoch << endl;
-            cout << "firstEpoch" << firstEpoch << endl;
+//            cout << "currEpoch" << currEpoch << endl;
+//            cout << "firstEpoch" << firstEpoch << endl;
 
                // Offset
             double timeOffset( currEpoch - firstEpoch );
 
-            cout << "timeOffset" << timeOffset << endl;
+//            cout << "timeOffset" << timeOffset << endl;
 
             double sod( (gData.header.epoch).getSecondOfDay() );
 
@@ -1060,7 +1089,7 @@ namespace gpstk
                      // covariance matrix. This fills the lower left and upper
                      // right quadrants of covariance matrix
                   int c3(0);
-                  for( TypeIDSet::const_iterator itType  = srcIndexedTypes.begin();
+                  for( TypeIDList::const_iterator itType  = srcIndexedTypes.begin();
                        itType != srcIndexedTypes.end();
                        ++itType )
                   {
@@ -1156,7 +1185,7 @@ namespace gpstk
                      // covariance matrix. This fills the lower left and upper
                      // right quadrants of covariance matrix
                   int c3(0);
-                  for( TypeIDSet::const_iterator itType  = srcIndexedTypes.begin();
+                  for( TypeIDList::const_iterator itType  = srcIndexedTypes.begin();
                        itType != srcIndexedTypes.end();
                        ++itType )
                   {
@@ -1742,8 +1771,8 @@ of qMatrix");
                  c1++;
              }
              
-             cout << "tempAmb:" << tempAmb << endl;
-             cout << "tempCov:" << tempCov << endl;
+//             cout << "tempAmb:" << tempAmb << endl;
+//             cout << "tempCov:" << tempCov << endl;
 
                 // Fill 'mlambda' with 'tempAmb/tempCov'
              mlambda.resolve(tempAmb, tempCov);
@@ -1752,9 +1781,9 @@ of qMatrix");
                 // Get fixed ambiguity vector
              Vector<double> ambFixedVec = mlambda.getFixedAmbVec();
 
-             cout << "iter:" << iter << endl;
-             cout << "numSV:" << numSV << endl;
-             cout << "ratioWL:" << ratioWL << endl;
+//             cout << "iter:" << iter << endl;
+//             cout << "numSV:" << numSV << endl;
+//             cout << "ratioWL:" << ratioWL << endl;
 
                 // Fixing ratio
              if( (ratioWL>3.0) )
@@ -1838,11 +1867,11 @@ of qMatrix");
                stateFlag(index) = 1.0;
             }
 
-            cout << "update solution/state" << endl;
-
-            cout << "stateFlag:" << stateFlag << endl;
-            cout << "newState:" << newState << endl;
-            cout << "newCov:" << newCov << endl;
+//            cout << "update solution/state" << endl;
+//
+//            cout << "stateFlag:" << stateFlag << endl;
+//            cout << "newState:" << newState << endl;
+//            cout << "newCov:" << newCov << endl;
 
                // Update the number of the fixed widelane ambiguities
             numFixedBWL = validSatSet.size();
@@ -1939,8 +1968,8 @@ of qMatrix");
                     c1++;
                 }
                 
-                cout << "tempAmb:" << tempAmb << endl;
-                cout << "tempCov:" << tempCov << endl;
+//                cout << "tempAmb:" << tempAmb << endl;
+//                cout << "tempCov:" << tempCov << endl;
 
                    // Fill 'mlambda' with 'tempAmb/tempCov'
                 mlambda.resolve(tempAmb, tempCov);
@@ -1950,10 +1979,10 @@ of qMatrix");
                 Vector<double> ambL1Fixed = mlambda.getFixedAmbVec();
 
 
-                cout << "iter:" << iter << endl;
-                cout << "numSV:" << numSV << endl;
-                cout << "ratioL1:" << ratioL1 << endl;
-                cout << "ambL1Fixed:" << ambL1Fixed << endl;
+//                cout << "iter:" << iter << endl;
+//                cout << "numSV:" << numSV << endl;
+//                cout << "ratioL1:" << ratioL1 << endl;
+//                cout << "ambL1Fixed:" << ambL1Fixed << endl;
 
                    // Fixing ratio
                    // Two different control parameter!
@@ -1968,10 +1997,10 @@ of qMatrix");
                            // Fixed L1 ambiguities
                         ambL1FixedMap[(*itSat)] = ambL1Fixed(c1);
 
-                        cout << "(*itSat)"  << (*itSat)
-                             << "L1:" << ambL1FixedMap[(*itSat)] 
-                             << "WL:" << ambWLFixedMap[(*itSat)]
-                             << endl;
+//                        cout << "(*itSat)"  << (*itSat)
+//                             << "L1:" << ambL1FixedMap[(*itSat)] 
+//                             << "WL:" << ambWLFixedMap[(*itSat)]
+//                             << endl;
                         c1++;
                     }
 
@@ -1999,7 +2028,7 @@ of qMatrix");
                         }
                     }
 
-                    cout << "sat to be removed:" << tempSat << endl;
+//                    cout << "sat to be removed:" << tempSat << endl;
 
                        // remove this satellite from validSatSet 
                     validSatSet.erase(tempSat);
@@ -2040,11 +2069,11 @@ of qMatrix");
                   stateFlag(index) = 1.0;
                }
 
-               cout << "update solution/state" << endl;
-
-               cout << "stateFlag:" << stateFlag << endl;
-               cout << "newState:" << newState << endl;
-               cout << "newCov:" << newCov << endl;
+//               cout << "update solution/state" << endl;
+//
+//               cout << "stateFlag:" << stateFlag << endl;
+//               cout << "newState:" << newState << endl;
+//               cout << "newCov:" << newCov << endl;
 
                   // Update the number of the fixed widelane ambiguities
                numFixedBL1 = validSatSet.size();
@@ -2061,22 +2090,22 @@ of qMatrix");
              if(numFixedBWL>4)
              {
                 double ttff = sod - startTime;
-                cout << "startTime" << startTime << endl;
-                cout << "WL ttff:" << ttff << endl;
+//                cout << "startTime" << startTime << endl;
+//                cout << "WL ttff:" << ttff << endl;
                 ttffWL.push_back(ttff);  
                 resetWL = false;
              }
          }
 
-         cout << "resetWL" << resetWL << "resetL1" << resetL1 << endl;
-         cout << "numFixedBL1" << numFixedBL1 << endl;
+//         cout << "resetWL" << resetWL << "resetL1" << resetL1 << endl;
+//         cout << "numFixedBL1" << numFixedBL1 << endl;
          if(resetL1)
          {
              if(numFixedBL1>4)
              {
                 double ttff = sod - startTime;
-                cout << "startTime" << startTime << endl;
-                cout << "NL ttff:" << ttff << endl;
+//                cout << "startTime" << startTime << endl;
+//                cout << "NL ttff:" << ttff << endl;
                 ttffL1.push_back(ttff);  
                 resetL1 = false;
              }
@@ -2092,8 +2121,8 @@ of qMatrix");
              if(drou<0.10)
              {
                 double dt = sod - startTime;
-                cout << "startTime" << startTime << endl;
-                cout << "ttsc:" << dt << endl;
+//                cout << "startTime" << startTime << endl;
+//                cout << "ttsc:" << dt << endl;
                 ttsc.push_back(dt);  
                 resetSol = false;
              }
@@ -2118,8 +2147,8 @@ of qMatrix");
              ambL2Flag(i)  = ambL1Flag(i);
          }
 
-         cout << "ambL1Fixed" << ambL1Fixed << endl;
-         cout << "ambL2Fixed" << ambL2Fixed << endl;
+//         cout << "ambL1Fixed" << ambL1Fixed << endl;
+//         cout << "ambL2Fixed" << ambL2Fixed << endl;
 
             //
             // Now, convert the transformed newState/newCov to the
@@ -2129,7 +2158,8 @@ of qMatrix");
          Vector<double> tempState ;
          Matrix<double> tempCov;
 
-         Matrix<double> mInv  = inverseChol(mapMatrix) ;
+//         Matrix<double> mInv  = inverseChol(mapMatrix) ;
+			Matrix<double> mInv = inverse(mapMatrix);
          Matrix<double> mInvT = transpose(mInv) ;
 
             // Transform newState/newCov back to the L1/L2 ambiguity related ones
@@ -2140,7 +2170,7 @@ of qMatrix");
          newCov = tempCov;
 
             // check
-         cout << "newState" << newState << endl;
+//         cout << "newState" << newState << endl;
 
             //
             // Now, Let's compute the postfit-residual                  
@@ -2432,6 +2462,45 @@ matrix and a priori state estimation vector do not match.");
          // Compute the postfit residuals Vector
       postfitResiduals = prefitResiduals - (designMatrix * solution);
 
+			// Debug code vvv
+		
+		cout << "residuals after measUpdate: " << endl;
+		for( int i=0; i<pRow; i++ )
+		{
+			if( i< numCurrentSV)
+			{
+				cout << "P1: ";
+			}
+			else if( i < 2*numCurrentSV )
+			{
+				cout << "P2: ";
+			}
+			else if( i < 3*numCurrentSV )
+			{
+				cout << "L1: ";
+			}
+			else if( i < 4*numCurrentSV )
+			{
+				cout << "L2: ";
+			}
+			else if( i < 5*numCurrentSV )
+			{
+				cout << "IonoL1: ";
+			}
+			else if( i < 6*numCurrentSV )
+			{
+				cout << "Spatial Constr: ";
+			}
+			else 
+			{
+				cout << "trop and dcb: ";
+			}
+			cout << "prefitResiduals: " << prefitResiduals(i) << endl;  
+			cout << "postfitResiduals: " << postfitResiduals(i) << endl;
+
+		}
+			// Debug code ^^^ 
+
          // If everything is fine so far, then the results should be valid
       valid = true;
 
@@ -2504,7 +2573,7 @@ matrix and a priori state estimation vector do not match.");
 
                // Store variables X ambiguities covariances
             int k(0);
-            for( TypeIDSet::const_iterator itType = srcIndexedTypes.begin();
+            for( TypeIDList::const_iterator itType = srcIndexedTypes.begin();
                  itType != srcIndexedTypes.end();
                  ++itType )
             {
@@ -2560,48 +2629,50 @@ matrix and a priori state estimation vector do not match.");
 
          // Watch out here: 'srcIndexedTypes' is a 'std::set', and all sets order their
          // elements. According to 'TypeID' class, this is the proper order:
-      srcIndexedTypes.insert(TypeID::wetMap);  // BEWARE: The first is wetMap!!!
+      srcIndexedTypes.push_back(TypeID::wetMap);  // BEWARE: The first is wetMap!!!
 
       if (useNEU)
       {
-         srcIndexedTypes.insert(TypeID::dLat); // #2
-         srcIndexedTypes.insert(TypeID::dLon); // #3
-         srcIndexedTypes.insert(TypeID::dH);   // #4
+         srcIndexedTypes.push_back(TypeID::dLat); // #2
+         srcIndexedTypes.push_back(TypeID::dLon); // #3
+         srcIndexedTypes.push_back(TypeID::dH);   // #4
       }
       else
       {
-         srcIndexedTypes.insert(TypeID::dx);   // #2
-         srcIndexedTypes.insert(TypeID::dy);   // #3
-         srcIndexedTypes.insert(TypeID::dz);   // #4
+         srcIndexedTypes.push_back(TypeID::dx);   // #2
+         srcIndexedTypes.push_back(TypeID::dy);   // #3
+         srcIndexedTypes.push_back(TypeID::dz);   // #4
       }
 
-      srcIndexedTypes.insert(TypeID::cdt);     // #5
-      srcIndexedTypes.insert(TypeID::recInstP2);  // #6
-      srcIndexedTypes.insert(TypeID::updL1);  // #7  
-      srcIndexedTypes.insert(TypeID::updL2);  // #8
+      srcIndexedTypes.push_back(TypeID::cdt);     // #5
+      srcIndexedTypes.push_back(TypeID::recInstP2);  // #6
+      srcIndexedTypes.push_back(TypeID::updL1);  // #7  
+      srcIndexedTypes.push_back(TypeID::updL2);  // #8
 
       if ( polyOrder == 1 )
       {
-         srcIndexedTypes.insert(TypeID::a0);
-         srcIndexedTypes.insert(TypeID::a1);
-         srcIndexedTypes.insert(TypeID::a2);
+         srcIndexedTypes.push_back(TypeID::a0);
+         srcIndexedTypes.push_back(TypeID::a1);
+         srcIndexedTypes.push_back(TypeID::a2);
       }
       else if( polyOrder == 2)
       {
-         srcIndexedTypes.insert(TypeID::a0);
-         srcIndexedTypes.insert(TypeID::a1);
-         srcIndexedTypes.insert(TypeID::a2);
-         srcIndexedTypes.insert(TypeID::a3);
-         srcIndexedTypes.insert(TypeID::a4);
-         srcIndexedTypes.insert(TypeID::a5);
+         srcIndexedTypes.push_back(TypeID::a0);
+         srcIndexedTypes.push_back(TypeID::a1);
+         srcIndexedTypes.push_back(TypeID::a2);
+         srcIndexedTypes.push_back(TypeID::a3);
+         srcIndexedTypes.push_back(TypeID::a4);
+         srcIndexedTypes.push_back(TypeID::a5);
       }
+
+
 
          //>Then, fill the types that are satellite-indexed
 
          // The order of the elment is as follows:
-      satIndexedTypes.insert(TypeID::ionoL1); // #2
-      satIndexedTypes.insert(TypeID::BL1);    // #3
-      satIndexedTypes.insert(TypeID::BL2);    // #4
+      satIndexedTypes.push_back(TypeID::ionoL1); // #2
+      satIndexedTypes.push_back(TypeID::BL1);    // #3
+      satIndexedTypes.push_back(TypeID::BL2);    // #4
 
 
          //>Firstly, fill the types that are common for all observables
@@ -2621,8 +2692,8 @@ matrix and a priori state estimation vector do not match.");
       }
 
          // Now, we build the basic equation definition
-      defaultEqDef.header = TypeID::prefitC1;
-      defaultEqDef.body = srcIndexedTypes;
+      defaultEqDef2.header = TypeID::prefitC1;
+      defaultEqDef2.body = srcIndexedTypes;
 
       return (*this);
 
@@ -2675,12 +2746,16 @@ matrix and a priori state estimation vector do not match.");
    {
 
          // Define iterator
-      TypeIDSet::const_iterator it;
+//      TypeIDSet::const_iterator it;
+      TypeIDList::const_iterator it;
 
          // Check if the provided type exists in the solution. If not,
          // an InvalidSolver exception will be issued.
-      it = defaultEqDef.body.find(type);
-      if( it == defaultEqDef.body.end() )
+//      it = defaultEqDef.body.find(type);
+		TypeIDList::const_iterator itStart = defaultEqDef2.body.begin();
+		TypeIDList::const_iterator itEnd = defaultEqDef2.body.end();
+      it = find(itStart, itEnd, type);
+      if( it == defaultEqDef2.body.end() )
       {
          InvalidRequest e("Type not found in solution vector.");
          GPSTK_THROW(e);
@@ -2691,8 +2766,9 @@ matrix and a priori state estimation vector do not match.");
       int counter(0);
 
          // Define a new iterator and count where the given type is
-      TypeIDSet::const_iterator it2;
-      for (it2 = defaultEqDef.body.begin(); it2!= it; it2++)
+      //TypeIDSet::const_iterator it2;
+      TypeIDList::const_iterator it2;
+      for (it2 = defaultEqDef2.body.begin(); it2!= it; it2++)
       {
          ++counter;
       }
@@ -2711,12 +2787,17 @@ matrix and a priori state estimation vector do not match.");
    {
 
          // Define iterator
-      TypeIDSet::const_iterator it;
+//      TypeIDSet::const_iterator it;
+      TypeIDList::const_iterator it;
 
          // Check if the provided type exists in the solution. If not,
          // an InvalidSolver exception will be issued.
-      it = defaultEqDef.body.find(type);
-      if( it == defaultEqDef.body.end() )
+//      it = defaultEqDef.body.find(type);
+		TypeIDList::const_iterator itStart = defaultEqDef2.body.begin();
+	   TypeIDList::const_iterator itEnd = defaultEqDef2.body.end();
+      it = find(itStart, itEnd, type);
+
+      if( it == defaultEqDef2.body.end() )
       {
          InvalidRequest e("Type not found in solution vector.");
          GPSTK_THROW(e);
@@ -2727,8 +2808,9 @@ matrix and a priori state estimation vector do not match.");
       int counter(0);
 
          // Define a new iterator and count where the given type is
-      TypeIDSet::const_iterator it2;
-      for (it2 = defaultEqDef.body.begin(); it2!= it; it2++)
+//      TypeIDSet::const_iterator it2;
+      TypeIDList::const_iterator it2;
+      for (it2 = defaultEqDef2.body.begin(); it2!= it; it2++)
       {
          ++counter;
       }
@@ -2748,13 +2830,18 @@ matrix and a priori state estimation vector do not match.");
    {
 
          // Define iterator
-      TypeIDSet::const_iterator it;
+//      TypeIDSet::const_iterator it;
+      TypeIDList::const_iterator it;
 
 
          // Check if the provided type exists in the covariance matrix. If not,
          // an InvalidSolver exception will be issued.
-      it = defaultEqDef.body.find(type);
-      if( it == defaultEqDef.body.end() )
+//      it = defaultEqDef.body.find(type);
+		TypeIDList::const_iterator itStart = defaultEqDef2.body.begin();
+		TypeIDList::const_iterator itEnd = defaultEqDef2.body.end();
+      it = find(itStart, itEnd, type);
+
+      if( it == defaultEqDef2.body.end() )
       {
          InvalidRequest e("Type not found in covariance matrix.");
          GPSTK_THROW(e);
@@ -2765,8 +2852,9 @@ matrix and a priori state estimation vector do not match.");
       int counter(0);
 
          // Define a new iterator and count where the given type is
-      TypeIDSet::const_iterator it2;
-      for (it2 = defaultEqDef.body.begin(); it2!= it; it2++)
+//      TypeIDSet::const_iterator it2;
+      TypeIDList::const_iterator it2;
+      for (it2 = defaultEqDef2.body.begin(); it2!= it; it2++)
       {
          ++counter;
       }
@@ -2786,13 +2874,18 @@ matrix and a priori state estimation vector do not match.");
    {
 
          // Define iterator
-      TypeIDSet::const_iterator it;
+//      TypeIDSet::const_iterator it;
+      TypeIDList::const_iterator it;
 
 
          // Check if the provided type exists in the covariance matrix. If not,
          // an InvalidSolver exception will be issued.
-      it = defaultEqDef.body.find(type);
-      if( it == defaultEqDef.body.end() )
+//      it = defaultEqDef2.body.find(type);
+		TypeIDList::const_iterator itStart = defaultEqDef2.body.begin();
+		TypeIDList::const_iterator itEnd = defaultEqDef2.body.end();
+      it = find(itStart, itEnd, type);
+
+      if( it == defaultEqDef2.body.end() )
       {
          InvalidRequest e("Type not found in covariance matrix.");
          GPSTK_THROW(e);
@@ -2803,8 +2896,9 @@ matrix and a priori state estimation vector do not match.");
       int counter(0);
 
          // Define a new iterator and count where the given type is
-      TypeIDSet::const_iterator it2;
-      for (it2 = defaultEqDef.body.begin(); it2!= it; it2++)
+//      TypeIDSet::const_iterator it2;
+      TypeIDList::const_iterator it2;
+      for (it2 = defaultEqDef2.body.begin(); it2!= it; it2++)
       {
          ++counter;
       }
