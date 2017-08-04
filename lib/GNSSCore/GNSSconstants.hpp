@@ -98,7 +98,14 @@ namespace gpstk
       /// GPS L5 frequency in units of oscillator frequency.
    const double L5_MULT_GPS   = 115.0;
       /// GPS Gamma constant
+		/// GAMMA_GPS = f1^2/f2^2
    const double GAMMA_GPS = 1.646944444;
+		/// factor1 = f2/(f1+f2)
+	const double factor1_GPS = 0.437956204379;
+		/// factor2 = f2/(f1-f2)
+	const double factor2_GPS = 3.529411764705;
+
+
      /// Reference Semi-major axis. From IS-GPS-800 Table 3.5-2 in meters.
    const double A_REF_GPS = 26559710.0;
      /// Omega reference value from Table 30-I converted to radians
@@ -238,6 +245,20 @@ namespace gpstk
       /// GAL L8 carrier wavelength in meters.
    const double L8_WAVELENGTH_GAL  = 0.251547001;
 
+      /// GAL WL carrier wavelength in meters using L1 and L5 freq
+   const double WL_WAVELENGTH_GAL_L1L5  = 0.751416041306;
+
+	const double LC_WAVELENGTH_GAL_L1L5  = 0.108941359148; 
+
+		/// factor1 = f5/(f1+f5);
+	const double factor1_GAL = 0.427509293680;
+
+		/// factor2 = f5/(f1-f5)
+	const double factor2_GAL = 2.948717948717;
+
+		/// GAMMA_GAL_L1L5
+	const double GAMMA_GAL_L1L5 = 1.793270321361;
+
    // ---------------- Geostationary (SBAS) ---------------------
       /// GEO L1 carrier frequency in Hz
    const double L1_FREQ_GEO   = L1_FREQ_GPS;
@@ -330,6 +351,90 @@ namespace gpstk
 
       return 0.0;
    }
+
+	/// Return frequency band 
+   /// given RINEX frequency band n(=1,2,5,6,7,8). Return 0 if the frequency n is
+   /// not valid for the system.
+   /// Calls for system GLO must include the frequency channel number N (-7<=N<=7).
+	inline double getFreqBand(const SatID& sat, const int& n, const int N=0)
+      throw()
+   {
+      switch(sat.system) {
+         case SatID::systemGPS:
+                 if(n == 1) return L1_FREQ_GPS;
+            else if(n == 2) return L2_FREQ_GPS;
+            else if(n == 5) return L5_FREQ_GPS;
+            break;
+//         case SatID::systemGlonass:
+//                 if(n == 1) return (C_MPS/(L1_FREQ_GLO + N*L1_FREQ_STEP_GLO));
+//            else if(n == 2) return (C_MPS/(L2_FREQ_GLO + N*L2_FREQ_STEP_GLO));
+//            break;
+         case SatID::systemGalileo:
+                 if(n == 1) return L1_FREQ_GAL;
+            else if(n == 5) return L5_FREQ_GAL;
+            else if(n == 6) return L6_FREQ_GAL;
+            else if(n == 7) return L7_FREQ_GAL;
+            else if(n == 8) return L8_FREQ_GAL;
+            break;
+//         case SatID::systemGeosync:
+//                 if(n == 1) return L1_WAVELENGTH_GEO;
+//            else if(n == 5) return L5_WAVELENGTH_GEO;
+//            break;
+//         case SatID::systemBeiDou:
+//            //MGEX data uses 2     if(n == 1) return L1_WAVELENGTH_BDS;
+//                 if(n == 2) return L1_WAVELENGTH_BDS;
+//            else if(n == 7) return L2_WAVELENGTH_BDS;
+//            else if(n == 6) return L3_WAVELENGTH_BDS;
+//            break;
+//         case SatID::systemQZSS:
+//                 if(n == 1) return L1_WAVELENGTH_QZS;
+//            else if(n == 2) return L2_WAVELENGTH_QZS;
+//            else if(n == 5) return L5_WAVELENGTH_QZS;
+//            else if(n == 6) return L6_WAVELENGTH_QZS;
+//            break;
+         default:
+            break;
+      }
+
+      return 0.0;
+	}
+
+
+	/// Compute ratio constant miu for specifed system and frequency band 
+   /// n(=1,2,5,6,7,8). 
+	/// for example: miu_GPS = f1^2/fj^2, j = 1, 2, 5 
+   /// Calls for system GLO must include the frequency channel number N (-7<=N<=7).
+	inline double getMiu( const SatID::SatelliteSystem& sys, 
+								 const int& n, const int N=0 )
+	{
+		double ratio(0.0);
+		double referenceFreqBand(0.0);  // numerator  
+		double freqBand(1.0);			  // demoninator
+
+		SatID dummySat( -1, sys);
+
+		switch( sys )
+		{
+			case SatID::systemGPS:
+					referenceFreqBand = getFreqBand( dummySat, 1); 
+					freqBand = getFreqBand( dummySat, n );
+				break;
+
+			case SatID::systemGalileo: 
+					referenceFreqBand = getFreqBand( dummySat, 1); 
+					freqBand = getFreqBand( dummySat, n );
+				break;
+			default:
+				break;
+		}
+
+		ratio = referenceFreqBand / freqBand;
+
+		return ( ratio*ratio ); 
+
+	}
+	
+
 
    /// Compute beta(a,b), the ratio of 2 frequencies fb/fa for the given satellite
    /// system (sat.id is ignored). Return 0 if either of the input n's are not valid

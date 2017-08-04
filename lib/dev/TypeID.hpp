@@ -46,6 +46,9 @@
 //  2015/01/28      add corrPC, corrLC, corrPdelta, corrLdelta, shjzhang
 //  2015/02/02      add corrC1/corrP1/corrP2/corrL1/corrL2, shjzhang
 //
+//  2017/08/04		  add member function IsCarrierPhase(), getFreqBand() for 
+//						  class TypeID 
+//						  
 //============================================================================
 
 
@@ -143,6 +146,12 @@ namespace gpstk
          Pdelta,    ///< Narrow-lane combination
          Ldelta,    ///< Wide-lane combination
          MWubbena,  ///< Melbourne-Wubbena combination
+			
+			MWubbena_G_L1L2,	///< GPS Melbourne-Wubbena combination 
+									///< using L1 and L2 frequency
+			MWubbena_E_E1E5a, ///< Galileo Melbourne-Wubbena combination
+									///< using E1 and E5a frequency
+			
          GRAPHIC1,  ///< GRoup And PHase Ionospheric Combination in L1
          GRAPHIC2,  ///< GRoup And PHase Ionospheric Combination in L2
          GRAPHIC5,  ///< GRoup And PHase Ionospheric Combination in L5
@@ -631,6 +640,14 @@ namespace gpstk
       virtual TypeID operator=(const TypeID& right);
 
 
+			/// get obsType information according to obs TypeID
+		bool IsCarrierPhase();
+
+			/* get Frequency string
+		    * @param length  the length of substr
+			 */
+		virtual int  getFreqBand( int length = 1 );
+			
          /// Convenience output method
       virtual std::ostream& dump(std::ostream& s) const;
 
@@ -688,6 +705,8 @@ namespace gpstk
 
          /// unregister all TypeIDs registered by name string
       static void unregAll();
+
+
 
    private:
 

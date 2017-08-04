@@ -96,6 +96,8 @@ namespace gpstk
       tStrings[Pdelta]     = "Pdelta";
       tStrings[Ldelta]     = "Ldelta";
       tStrings[MWubbena]   = "MWubbena";
+      tStrings[MWubbena_G_L1L2]   = "MWubbena_GPS_L1L2";
+      tStrings[MWubbena_E_E1E5a]   = "MWubbena_Galileo_E1E5a";
       tStrings[GRAPHIC1]   = "GRAPHIC1";
       tStrings[GRAPHIC2]   = "GRAPHIC2";
       tStrings[GRAPHIC5]   = "GRAPHIC5";
@@ -440,6 +442,26 @@ namespace gpstk
       tStrings[Last]       = "Last";
       tStrings[Placeholder]= "Placeholder";
    }
+
+
+		// Added by Lei Zhao vvv 
+	bool TypeID::IsCarrierPhase( )
+	{
+		std::string tidStr( StringUtils::asString( (*this) ) );
+
+		return  ( tidStr[0] == 'L' );
+
+	}
+
+	int TypeID::getFreqBand( int length )
+	{
+		std::string tidStr( StringUtils::asString( (*this) ) );
+
+		return StringUtils::asInt( StringUtils::subString( tidStr, 1, length ) );
+	} 
+   
+		// ^^^ 
+
 
 
       // Assignment operator
