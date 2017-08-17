@@ -267,6 +267,30 @@ namespace gpstk
     };  // End typeValueMap
 
 
+		/// Define a struct containing epoch and typeValue
+	struct epochTypeValueBody : public typeValueMap
+	{
+			/// Field containing the epoch of data
+		CommonTime epoch;
+
+			/// Default constructor
+		epochTypeValueBody() {};
+
+			/// Explicit construct 
+		epochTypeValueBody( const CommonTime& ct, 
+								  const typeValueMap& tvm ) 
+			: epoch(ct), typeValueMap(tvm)		
+		{}
+
+// TO DO!!!
+//			/// Explicit constructor from parent class 
+//		epochTypeValueBody( const typeValueMap& tvm, const CommonTime& time )
+//				: 
+
+			/// Destructor 
+		virtual ~epochTypeValueBody() {};
+
+	};   // End of 'struct epochTypeValueBody : public typeValueMap'
 
       /// Map holding SatID with corresponding numeric value.
    struct satValueMap : std::map<SatID, double>
@@ -354,6 +378,40 @@ namespace gpstk
    };  // End of 'satValueMap'
 
 
+      /// Map holding SatID with corresponding epochTypeValueBody
+	struct satEpochTypeValueMap : std::map<SatID, epochTypeValueBody>
+	{
+			/// Returns the number of available satellites.
+      size_t numSats() const
+      { return (*this).size(); }
+
+         /// Modifies this object, removing this satellite.
+         /// @param satellite Satellite to be removed.
+      satEpochTypeValueMap& removeSatID(const SatID& satellite)
+      { (*this).erase(satellite); return (*this); }
+
+        /** Returns the data value (double) corresponding to provided SatID
+          *  and TypeID.
+          *
+          * @param satellite     Satellite to be looked for.
+          * @param type          Type to be looked for.
+          */
+      double getValue( const SatID& satellite,
+                       const TypeID& type ) const
+         throw( SatIDNotFound, TypeIDNotFound );
+
+
+         /// Returns a reference to the epochTypeValueBody with corresponding SatID.
+         /// @param type Type of value to be look for.
+      epochTypeValueBody& operator()(const SatID& satellite)
+         throw(SatIDNotFound);
+
+         /// Destructor.
+      virtual ~satEpochTypeValueMap() {};
+
+
+
+	};   // End of ' struct satEpochTypeValueMap : std::map<SatID, ... '
 
       /// Map holding SatID with corresponding typeValueMap.
    struct satTypeValueMap : std::map<SatID, typeValueMap>
@@ -552,6 +610,7 @@ namespace gpstk
       virtual ~satTypeValueMap() {};
 
    };  // End of 'satTypeValueMap'
+
 
 
 

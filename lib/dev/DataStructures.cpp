@@ -967,6 +967,49 @@ in matrix and number of types do not match") );
    }  // End of method 'satTypeValueMap::insertMatrix()'
 
 
+      /* Returns the data value (double) corresponding to provided SatID
+       * and TypeID.
+       *
+       * @param satellite     Satellite to be looked for.
+       * @param type          Type to be looked for.
+       */
+   double satEpochTypeValueMap::getValue( const SatID& satellite,
+                                          const TypeID& type ) const
+      throw( SatIDNotFound, TypeIDNotFound )
+	{
+
+	   satEpochTypeValueMap::const_iterator itObs( (*this).find(satellite) );
+      if( itObs != (*this).end() )
+      {
+         return (*itObs).second.getValue( type );
+      }
+      else
+      {
+         GPSTK_THROW(SatIDNotFound("SatID not found in map"));
+      }	
+
+	}   // End of ' double satTypeValueMap::getValue( const SatID& satellite, ...'
+
+
+      // Returns a reference to the typeValueMap with corresponding SatID.
+      // @param type Type of value to be looked for.
+   epochTypeValueBody& satEpochTypeValueMap::operator()(const SatID& satellite)
+      throw(SatIDNotFound)
+   {
+
+      satEpochTypeValueMap::iterator itObs( (*this).find(satellite) );
+      if( itObs != (*this).end() )
+      {
+         return (*itObs).second;
+      }
+      else
+      {
+         GPSTK_THROW(SatIDNotFound("SatID not found in map"));
+      }
+
+   }  // End of method 'satTypeValueMap::operator()'
+
+
 
       /* Returns the data value (double) corresponding to provided SatID
        * and TypeID.
