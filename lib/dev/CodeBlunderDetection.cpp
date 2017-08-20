@@ -94,8 +94,18 @@ namespace gpstk
 	{
  		try
  		{
+			// debug code vvv
+			CivilTime ct(epoch);
+			std::cout << ct.year << " " << ct.month << " " << ct.day 
+							<< " " << ct.hour << " " << ct.minute << " " 
+								<< ct.second << std::endl;
+			// debug code ^^^ 
+
  			SatIDSet satRejectedSet;
-			SatIDSet satContinuousSet;
+
+				// clear sat time-differenced LI data
+				// at the beginning of each processing epoch 
+			satLITimeDiffData.clear();
  
  				// Loop through all the satellites
  			satTypeValueMap::iterator it;
@@ -109,6 +119,7 @@ namespace gpstk
 				typeValueMap codeData;
 
 					// Check required code data 
+				double testValue(0.0);
 				try
 				{
 
@@ -121,7 +132,7 @@ namespace gpstk
 						TypeID type( *it );
 
 							// Try to get the value of this sat 
-						codeData[ type ] = tvm( type );
+						testValue = tvm( type );
 
 					}   // End of ' for( TypeIDSet::const_iterator it ... '
 	
@@ -142,39 +153,43 @@ namespace gpstk
 
  					// Get filter data of this sat 
 				bool isTimeContinuous(true);
- 				isTimeContinuous = !getSatCodeFilterData( epoch, sat, 
-																	   codeData,	epochflag ); 
+ 				isTimeContinuous = !getSatFilterData( epoch, sat, 
+																  tvm,	epochflag ); 
 
-
-				if( isTimeContinuous )
-				{
-						// Add this sat for later estimation
-					satContinuousSet.insert( sat );
-
-				}
-				else 
-				{
-					SatIDSet::const_iterator itSat = satContinuousSet.find( sat );
-					if( itSat != satContinuousSet.end() )
-					{
-							// Remove this sat
-						satContinuousSet.erase( sat );
-					}
-				}   // End of ' if( isTimeContinuous ) '
- 
  			}   // End of ' for( it = gData.begin();  ... '
 
-			// debug code vvv
-			
-			SatID sat1(1, SatID::systemGPS );
-			CommonTime time( satFormerData( sat1 ).epoch );
-			CivilTime ct(time);
-			std::cout << ct.year << " " << ct.month << " " << ct.day 
-							<< " " << ct.hour << " " << ct.minute << " " 
-								<< ct.second << std::endl;
-			std::cout << "Test C1 value: " << satFormerData( sat1 )( TypeID::C1) << std::endl;
+				// Remove satellites with missing data
+			gData.removeSatID(satRejectedSet);
+
+
+				// Now, let's model time-differenced code observations 
+			size_t numOfSats( satCodeTimeDiffData.numSats() );
+			if( numOfSats >= 4 )
+			{
+//				timeDiffCodeModel();
+				std::cout << "Do estimation!!!" << std::endl;
+			}   
+			else
+			{
+				std::cout << "not enough sats" << std::endl;
+			}
+
+
+				// Clear satCodeTimeDiffData, which is generated at every epoch 
+			satCodeTimeDiffData.clear();
+
+
 		
-			// debug code ^^^ 
+			return gData;
+			
+
+//			// debug code vvv
+//			
+//			SatID sat1(1, SatID::systemGPS );
+//			CommonTime time( satFormerData( sat1 ).epoch );
+//			std::cout << "Test C1 value: " << satFormerData( sat1 )( TypeID::C1) << std::endl;
+//		
+//			// debug code ^^^ 
  
  		}
  
@@ -205,7 +220,7 @@ namespace gpstk
 		 * @param epochFlag 
 		 *
 		 */
-	bool CodeBlunderDetection::getSatCodeFilterData( const CommonTime& epoch, 
+	bool CodeBlunderDetection::getSatFilterData( const CommonTime& epoch, 
 																  const SatID& sat, 
 																  typeValueMap& tvMap,
 																  const short& epochFlag )
@@ -213,10 +228,12 @@ namespace gpstk
 
 		bool reportTimeInteruption(false);
 
+
+
 			// Difference between current and former epochs, in sec
 		double currentDeltaT(0.0);
 
-			// Incorporate info 
+			// Incorporate epoch and tvMap  
 		epochTypeValueBody etvb(epoch, tvMap);
 		
 			//  Is this  a new visible sat?
@@ -234,15 +251,27 @@ namespace gpstk
 		}   // End of ' if( itFormData == satFormerData.end() ) '
 
 
-
-		
-
-
 			// Get the difference between current epoch and former epoch,
 			// in seconds
+		currentDeltaT = ( epoch - satFormerData[sat].epoch );
+		
+		if( currentDeltaT > deltaTMax )
+		{
+				// This means time gap of this sat, report time interuption
+			reportTimeInteruption = true;
 
+				// Updata satFormerData 
+			satFormerData[sat] = etvb;
 
+				// Just return
+			return reportTimeInteruption;
 
+		}
+		
+			// TO DO!!!
+			// epochFlag 
+
+			// Now, everything is OK!
 			// Loop through the codeTypes to compute time-differenced values
 		for( TypeIDSet::const_iterator it = codeTypes.begin();
 			  it != codeTypes.end();
@@ -250,19 +279,58 @@ namespace gpstk
 		{
 			TypeID type( *it );
 
-			// debug code vvv
-			//std::cout << sat << " " << type << std::endl;
-			// debug code ^^^ 
 			
 				// Time differenced value of this type 
 			satCodeTimeDiffData[sat][type] = tvMap(type) - 
 														satFormerData(sat)(type);
 
-
-				// Update data
-			satFormerData(sat) = etvb;
 		
 		}   // End of ' for( TypeIDSet::const_iterator it = obsTypes.begin(); ... '
+
+		
+			// Loop through the liTypes to compute time-differenced values
+		if( useExternalIonoDelayInfo )
+		{
+			for( TypeIDSet::const_iterator it = liTypes.begin(); 
+				  it != liTypes.end(); 
+				  ++it )
+			{
+				TypeID type( *it ), outType( *it );
+
+				if( type == TypeID::LI )
+				{
+					outType = TypeID::deltaLI;
+				}
+
+					// Time differenced value of this type 
+				double deltaLI(0.0);
+				deltaLI = tvMap(type) - satFormerData(sat)(type);
+
+				satLITimeDiffData[sat][outType] = deltaLI;
+
+
+					// Record deltaLI in etvb
+				etvb[outType] = deltaLI;
+
+					// Double time-differenced LI 
+				double deltaDeltaLI(0.0);
+				epochTypeValueBody::const_iterator iter = 
+												satFormerData(sat).find( TypeID::deltaLI );	
+				if( iter != satFormerData(sat).end() )
+				{
+					deltaDeltaLI = deltaLI - satFormerData(sat)(outType);
+					satLITimeDiffData[sat][ TypeID::deltaDeltaLI ] = deltaDeltaLI;
+				}
+				
+			}   // End of ' for( TypeIDSet::const_iterator it =  ... '
+
+		}   // End of ' if( useExternalIonoDelayInfo ) '
+
+
+			// Update satFormerData data
+		satFormerData[sat] = etvb;
+
+		return reportTimeInteruption;
 
 
 	}   // End of 'void CycleSlipEstimator::getFilterData( const SatID& sat, ... '

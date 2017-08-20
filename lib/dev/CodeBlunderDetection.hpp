@@ -63,7 +63,10 @@ namespace gpstk
 			/* Default constructor 
 			 * 
 			 */
-			CodeBlunderDetection() {};
+			CodeBlunderDetection()
+				: deltaTMax(61.0), staticReceiver(true), 
+				  useExternalIonoDelayInfo(true) 
+			{};
 
 			/* Common Constructor 
 			 *
@@ -74,7 +77,8 @@ namespace gpstk
 			CodeBlunderDetection( const SatID::SatelliteSystem& usrSys,
 										 const TypeIDSet& usrCodeTypes )
 										 : sys(usrSys), codeTypes(usrCodeTypes),
-											staticReceiver(true) 
+											staticReceiver(true), deltaTMax(61.0),
+											useExternalIonoDelayInfo(true) 
 			{};
 
 
@@ -118,8 +122,22 @@ namespace gpstk
 		virtual CodeBlunderDetection& setSysCodeTypes( 
 										const SatID::SatelliteSystem& usrSys,
 										TypeIDSet& usrCodeTypes )
-		{	sys  = usrSys; codeTypes = usrCodeTypes; return (*this); }
+		{ sys  = usrSys; codeTypes = usrCodeTypes; return (*this); }
 
+
+			///  Get LI time-diff data
+		virtual satTypeValueMap& getSatLITimeDiffData()
+		{ return satLITimeDiffData; }
+
+
+			/** Set LI  types  
+			 *
+			 * @param sys			sat systems 
+			 * @param ots			obs types of sys
+			 */
+			/// 
+		virtual CodeBlunderDetection& setLITypes( TypeIDSet& usrLITypes )
+		{ liTypes = usrLITypes; return (*this); }
 
 
 			/// Returns a string identifying this object.
@@ -137,15 +155,27 @@ namespace gpstk
 				/// Code obs types
 			TypeIDSet codeTypes; 
 
+				/// LI types 
+			TypeIDSet liTypes;
+
 				/// Receiver state
 			bool staticReceiver;
+
+				/// Max limit of time gap 
+			double deltaTMax;
+
+				/// Use external ionosperic delay info 
+			bool useExternalIonoDelayInfo;
 
 				/// Struct to store sat data of former epoch
 			satEpochTypeValueMap satFormerData;
 			
 
-				/// Sat time-differenced data
+				/// Sat time-differenced code data
 			satTypeValueMap satCodeTimeDiffData;
+
+				/// Sat time-differenced ionospheric delay data 
+			satTypeValueMap satLITimeDiffData;
 			
 
 			/* Get filter data
@@ -158,7 +188,7 @@ namespace gpstk
 			 * @param tvMap		data related to this sat
 			 * @param epochFlag 
 			 */ 
-		virtual bool getSatCodeFilterData( const CommonTime& epoch, 
+		virtual bool getSatFilterData( const CommonTime& epoch, 
 													  const SatID& sat,
 													  typeValueMap& tvMap, 
 													  const short& epochFlag ); 
