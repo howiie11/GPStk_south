@@ -168,6 +168,10 @@ namespace gpstk
 			{
 //				timeDiffCodeModel();
 				std::cout << "Do estimation!!!" << std::endl;
+
+					// Returned value
+				SatIDSet blunderCodeSatSet; 
+				blunderCodeSatSet = modelTimeDifferencedCode( satCodeTimeDiffData );
 			}   
 			else
 			{
@@ -334,6 +338,93 @@ namespace gpstk
 
 
 	}   // End of 'void CycleSlipEstimator::getFilterData( const SatID& sat, ... '
+
+
+		/** Model time-differenced code data
+		 *
+		 * ...
+		 *
+		 */
+	SatIDSet CodeBlunderDetection::modelTimeDifferencedCode( 
+			const satTypeValueMap& stvm )
+	{
+
+		SatIDSet badSatSet;
+
+			// Num of available sats
+		size_t numOfSats( satCodeTimeDiffData.numSats() );
+
+			// Total num of elements in satCodeTimeDiffData
+		size_t numOfElements( satCodeTimeDiffData.numElements() );
+
+			// Num of measurements
+		size_t numMeas( numOfElements + numOfSats );
+
+			// Num of unknowns 
+			// 3				receiver coordinate displacement(if it is moving)
+			// 1				receiver clock offset variation 
+			// numOfSats   ionospheric delay variation on the first frequency
+			//					eg. usually L1 for GPS 
+		size_t numUnknowns( numOfSats + 1 + (staticReceiver?0:3) ) ;
+
+		// debug code vvv
+		//std::cout << "numOfSats: " << numOfSats << "numUnknowns: " 
+		//				<< numUnknowns << std::endl;
+		// debug code ^^^ 
+
+			// Handy copies 
+		size_t rows( numMeas ), columns( numUnknowns );
+
+			// Measurement vector
+		Vector<double> y( rows, 0.0 );
+
+			// Weight matrix for measurements  
+		Matrix<double> rMatrix( rows, rows, 0.0);
+
+			// Design matrix
+		Matrix<double> hMatrix( rows, columns, 0.0);
+
+		
+			// Nowm fill in matrix
+			// y = [P1,s1 P2,s1 P3,s1 ... P1,sn P2,sn P3,sn]
+		size_t i(0);
+		for( satTypeValueMap::const_iterator itStvm = satCodeTimeDiffData.begin(); 
+			  itStvm != satCodeTimeDiffData.end(); 
+			  ++itStvm )
+		{
+
+				// SatID 
+			SatID sat( itStvm->first );
+
+				for( typeValueMap::const_iterator itTvm = (*itStvm).second.begin();
+					  itTvm != (*itStvm).second.end(); 
+					  ++itTvm )
+				{
+						// TypeID 
+					TypeID type( itTvm->first );
+					
+					y(i) = itTvm->second;
+
+						//	Increment for i 
+					i++;
+
+				}   // End of ' for( typeValueMap::const_iterator itTvm ... '
+
+					// Add virtual measurement of ionospheric delay variation
+				y(i) = 0;
+				i++;   // Donot forget!!! 
+
+		}   // End of ' for( satTypeValueMap::const_iterator itStvm =  ... '
+
+
+
+			
+
+
+
+		return badSatSet;
+
+	}   // End of ' void CodeBlunderDetection::modelTimeDifferencedCode( ...'
 
 
 
