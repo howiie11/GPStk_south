@@ -39,6 +39,8 @@
 //============================================================================
 
 #include "CodeBlunderDetection.hpp"
+#include "GNSSObsSTDTables.hpp"
+#include "GNSSconstants.hpp"
 
 namespace gpstk
 {
@@ -291,6 +293,13 @@ namespace gpstk
 		
 		}   // End of ' for( TypeIDSet::const_iterator it = obsTypes.begin(); ... '
 
+			// Insert weight info into satCodeTimeDiffData with
+			// the consideration of elevation 
+		double wNow( tvMap(TypeID::weight) );
+		double wPrevious( satFormerData(sat)(TypeID::weight) );
+		satCodeTimeDiffData[sat][TypeID::weight] = 
+			wNow*wPrevious/( wNow + wPrevious); 
+
 		
 			// Loop through the liTypes to compute time-differenced values
 		if( useExternalIonoDelayInfo )
@@ -367,6 +376,8 @@ namespace gpstk
 			//					eg. usually L1 for GPS 
 		size_t numUnknowns( numOfSats + 1 + (staticReceiver?0:3) ) ;
 
+		size_t numCoorVar( (staticReceiver?0:3) );
+
 		// debug code vvv
 		//std::cout << "numOfSats: " << numOfSats << "numUnknowns: " 
 		//				<< numUnknowns << std::endl;
@@ -379,13 +390,17 @@ namespace gpstk
 		Vector<double> y( rows, 0.0 );
 
 			// Weight matrix for measurements  
-		Matrix<double> rMatrix( rows, rows, 0.0);
+		Matrix<double> rMatrix( rows, rows, 0.0 );
 
 			// Design matrix
-		Matrix<double> hMatrix( rows, columns, 0.0);
+		Matrix<double> hMatrix( rows, columns, 0.0 );
 
 		
-			// Nowm fill in matrix
+			// Unit weight std  
+		GNSSObsSTDTables obsStd;
+		double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, TypeID::PC) );
+
+			// Now fill in matrix
 			// y = [P1,s1 P2,s1 P3,s1 ... P1,sn P2,sn P3,sn]
 		size_t i(0);
 		for( satTypeValueMap::const_iterator itStvm = satCodeTimeDiffData.begin(); 
@@ -395,29 +410,74 @@ namespace gpstk
 
 				// SatID 
 			SatID sat( itStvm->first );
+			typeValueMap tvm( itStvm->second );
 
-				for( typeValueMap::const_iterator itTvm = (*itStvm).second.begin();
-					  itTvm != (*itStvm).second.end(); 
-					  ++itTvm )
-				{
-						// TypeID 
-					TypeID type( itTvm->first );
+				// Column index  
+			size_t j(0);
+
+			for( TypeIDSet::const_iterator itCodeTypes = codeTypes.begin();
+				  itCodeTypes != codeTypes.end(); 
+				  ++itCodeTypes )
+			{
+					// Code TypeID 
+				TypeID type( itCodeTypes->first );
+				
+				y(i) = tvm( type );
+	
+					// Zenith weight
+				double codeStd( obsStd.getGNSSObsSTD(SatID::systemGPS, type ) );
+				double weight( unitWeightStd/codeStd );
+				weight *= weight;
+	
+				rMatrix( i, i ) = tvm(weight) * weight; 
+
+
+					// ***Now fill design matrix
 					
-					y(i) = itTvm->second;
 
-						//	Increment for i 
-					i++;
+				if( !staticReceiver )
+				{
+						// Coefficients for the coordinate displacement deltadx/y/z
+						// but here we use that of dx/y/z as an approximation
+					hMatrix( i, 0 ) = tvm( TypeID::dx );
+					hMatrix( i, 1 ) = tvm( TypeID::dy );
+					hMatrix( i, 2 ) = tvm( TypeID::dz );
+				}
 
-				}   // End of ' for( typeValueMap::const_iterator itTvm ... '
+					// Coefficients for the variation of receiver colock
+				hMatrix( i, numCoorVar ) = 1.0;
 
-					// Add virtual measurement of ionospheric delay variation
-				y(i) = 0;
-				i++;   // Donot forget!!! 
+					// Coefficients for the variation of iono delay
+					// j indicates the sat index
+				hMatrix( i, numCoorVar+1+j ) = 
+					getMiu( sat.system, type.getFreqBand() );
+
+
+					//	Increment for row 
+				i++;
+
+
+	
+			}   // End of ' for( typeValueMap::const_iterator itTvm ... '
+
+				// Add virtual measurement of ionospheric delay variation
+			y(i) = 0;
+			double ionoWeight( unitWeightStd/(0.10) );
+			rMatrix( i, i ) = ionoWeight*ionoWeight;
+
+				// Only one coefficients for this virtual obs  
+			hMatrix( i, numCoorVar+1+j ) = 1.0;
+
+				
+				// Preparation for next sat
+			i++;   // Donot forget!!! 
+			j++;
 
 		}   // End of ' for( satTypeValueMap::const_iterator itStvm =  ... '
 
 
 
+		std::cout << "hMatrix: " << std::endl;
 			
 
 
