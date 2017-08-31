@@ -41,6 +41,8 @@
 #include "CodeBlunderDetection.hpp"
 #include "GNSSObsSTDTables.hpp"
 #include "GNSSconstants.hpp"
+#include "SolverWMS.hpp"
+#include "Stats.hpp"
 
 namespace gpstk
 {
@@ -120,6 +122,10 @@ namespace gpstk
 				typeValueMap tvm( it -> second );
 				typeValueMap codeData;
 
+					// Test code vvv
+//				tvm[ TypeID::weight ] = 1.0;
+					// Test code ^^^ 
+
 					// Check required code data 
 				double testValue(0.0);
 				try
@@ -173,7 +179,7 @@ namespace gpstk
 
 					// Returned value
 				SatIDSet blunderCodeSatSet; 
-				blunderCodeSatSet = modelTimeDifferencedCode( satCodeTimeDiffData );
+				blunderCodeSatSet = modelTimeDifferencedCode( gData );
 			}   
 			else
 			{
@@ -302,7 +308,7 @@ namespace gpstk
 
 		
 			// Loop through the liTypes to compute time-differenced values
-		if( useExternalIonoDelayInfo )
+		if( useTimeDifferencedLI )
 		{
 			for( TypeIDSet::const_iterator it = liTypes.begin(); 
 				  it != liTypes.end(); 
@@ -355,7 +361,7 @@ namespace gpstk
 		 *
 		 */
 	SatIDSet CodeBlunderDetection::modelTimeDifferencedCode( 
-			const satTypeValueMap& stvm )
+			satTypeValueMap& stvm )
 	{
 
 		SatIDSet badSatSet;
@@ -363,8 +369,16 @@ namespace gpstk
 			// Num of available sats
 		size_t numOfSats( satCodeTimeDiffData.numSats() );
 
+		// debug code vvv
+		std::cout << "numOfSats: " << numOfSats << std::endl;
+		// debug code ^^^ 
+
 			// Total num of elements in satCodeTimeDiffData
-		size_t numOfElements( satCodeTimeDiffData.numElements() );
+		satTypeValueMap obsData( satCodeTimeDiffData.extractTypeID( codeTypes ) );
+		size_t numOfElements( obsData.numElements() );
+		// debug code vvv
+		std::cout << "numOfElements: " << numOfElements << std::endl;
+		// debug code ^^^ 
 
 			// Num of measurements
 		size_t numMeas( numOfElements + numOfSats );
@@ -386,6 +400,9 @@ namespace gpstk
 			// Handy copies 
 		size_t rows( numMeas ), columns( numUnknowns );
 
+		// debug code vvv
+		std::cout << "rows and columns: " << rows << " " << columns  << std::endl;
+		// debug code ^^^ 
 			// Measurement vector
 		Vector<double> y( rows, 0.0 );
 
@@ -398,11 +415,19 @@ namespace gpstk
 		
 			// Unit weight std  
 		GNSSObsSTDTables obsStd;
-		double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, TypeID::PC) );
+		double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, 
+																  TypeID::prefitPC ) );
+		unitWeightStd = 0.2;
 
-			// Now fill in matrix
-			// y = [P1,s1 P2,s1 P3,s1 ... P1,sn P2,sn P3,sn]
+			//* Now fill in matrix
+			//* y = [P1,s1 P2,s1 P3,s1 ... P1,sn P2,sn P3,sn]
+			
+			// Row index
 		size_t i(0);
+
+			// Column index  
+		size_t j(0);
+		
 		for( satTypeValueMap::const_iterator itStvm = satCodeTimeDiffData.begin(); 
 			  itStvm != satCodeTimeDiffData.end(); 
 			  ++itStvm )
@@ -412,15 +437,17 @@ namespace gpstk
 			SatID sat( itStvm->first );
 			typeValueMap tvm( itStvm->second );
 
-				// Column index  
-			size_t j(0);
 
 			for( TypeIDSet::const_iterator itCodeTypes = codeTypes.begin();
 				  itCodeTypes != codeTypes.end(); 
 				  ++itCodeTypes )
 			{
 					// Code TypeID 
-				TypeID type( itCodeTypes->first );
+				TypeID type( *itCodeTypes );
+
+				// debug code vvv
+				std::cout << "type= " << type << std::endl;
+				// debug code ^^^ 
 				
 				y(i) = tvm( type );
 	
@@ -429,7 +456,7 @@ namespace gpstk
 				double weight( unitWeightStd/codeStd );
 				weight *= weight;
 	
-				rMatrix( i, i ) = tvm(weight) * weight; 
+				rMatrix( i, i ) = tvm(TypeID::weight) * weight; 
 
 
 					// ***Now fill design matrix
@@ -439,9 +466,9 @@ namespace gpstk
 				{
 						// Coefficients for the coordinate displacement deltadx/y/z
 						// but here we use that of dx/y/z as an approximation
-					hMatrix( i, 0 ) = tvm( TypeID::dx );
-					hMatrix( i, 1 ) = tvm( TypeID::dy );
-					hMatrix( i, 2 ) = tvm( TypeID::dz );
+					hMatrix( i, 0 ) = stvm(sat)( TypeID::dx );
+					hMatrix( i, 1 ) = stvm(sat)( TypeID::dy );
+					hMatrix( i, 2 ) = stvm(sat)( TypeID::dz );
 				}
 
 					// Coefficients for the variation of receiver colock
@@ -449,8 +476,13 @@ namespace gpstk
 
 					// Coefficients for the variation of iono delay
 					// j indicates the sat index
+
+					// Note the index for function getFreqBand(), which depends
+					// on the string of type
+					// TypeID::prefitP1 <---> prefitResidualCodeP1 
+					// so the starting index is 19
 				hMatrix( i, numCoorVar+1+j ) = 
-					getMiu( sat.system, type.getFreqBand() );
+					getMiu( sat.system, type.getFreqBand(19) );
 
 
 					//	Increment for row 
@@ -476,9 +508,66 @@ namespace gpstk
 		}   // End of ' for( satTypeValueMap::const_iterator itStvm =  ... '
 
 
-
+		// debug code vvv
 		std::cout << "hMatrix: " << std::endl;
+		std::cout << hMatrix << std::endl;
+		// debug code ^^^
+
+			// Now employ a solver 
+		SolverWMS solver;
+		solver.Compute( y, hMatrix, rMatrix );
+
+			// Postfit residuals
+		Matrix<double> postfitResiduals( rows, 1, 0.0 );
+		postfitResiduals = hMatrix * solver.solution - y; 
+
+
+		// debug code vvv
+		std::cout << "solution: " << std::endl;
+		std::cout << solver.solution << std::endl;
+		std::cout << "postfitRes: " << std::endl;
+		std::cout << postfitResiduals << std::endl;
+		// debug code ^^^
 			
+//			// post unit weight std
+//		Matrix<double> vTpv( transpose(postfitResiduals) * 
+//								  rMatrix * postfitResiduals );
+//
+//		double sigma0hat = std::sqrt( vTpv(0,0) / ( rows - numUnknowns ) );
+//
+//
+//		// debug code vvv
+//		std::cout << "sigma0: " << unitWeightStd << std::endl;
+//		std::cout << "sigma0hat: " << sigma0hat << std::endl;
+//		// debug code ^^^
+//
+//
+//			// Compute Qvv
+//		Matrix<double> Q( inverse(rMatrix) );
+//		Matrix<double> Nbb( transpose( hMatrix ) * rMatrix * hMatrix );
+//		Matrix<double> invNbb( inverse(Nbb) );
+//		Matrix<double> Qvv( Q - hMatrix * invNbb * transpose( hMatrix ) );
+//
+//	
+//			// Compute normalized residuals
+//		Vector<double> normRes( numOfElements, 0.0 );
+//		size_t k(0);
+//		size_t numCodeTypes( codeTypes.size() );
+//		for( size_t i=0; i<rows; i++ )
+//		{
+//			if( (i%(numCodeTypes+1)) == numCodeTypes ) continue;
+//			normRes(k) = postfitResiduals( i, 0 ) / Qvv( i, i );
+//			k++;
+//		}
+//
+//		// debug code vvv
+//		Stats<double> statistic;
+//		statistic.Add(normRes);
+//		std::cout << "normRes ave: " << statistic.Average() << " var: " 
+//						<< statistic.StdDev() <<  std::endl;
+//		// debug code ^^^
+
+
 
 
 
@@ -486,9 +575,5 @@ namespace gpstk
 
 	}   // End of ' void CodeBlunderDetection::modelTimeDifferencedCode( ...'
 
-
-
-
-	
 
 }   // End of namespace

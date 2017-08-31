@@ -1739,6 +1739,10 @@ namespace gpstk
                              gnssRinex& f )
       throw(FFStreamError, gpstk::StringUtils::StringException);
 
+		/// Count freq num from a given TypeIDSet
+	size_t CountFreqNum( const SatID::SatelliteSystem sys,
+								const TypeIDSet& tidSet );
+
 
       //@}
 

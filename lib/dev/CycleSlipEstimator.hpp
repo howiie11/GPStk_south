@@ -1,13 +1,16 @@
 #pragma ident "$Id$"
 
 /**
- * @file CycleSlipEstimator.hpp 
- * This is a class to estimate cycle slips using time differenced code and phase
- * observables, as well as pseudo ionosphere observable 
+ * @file CycleSlipEstimator.hpp
+ * This is a class to detect code blunders using quality control theory
+ * 
+ * For more info, please refer to: 
+ * Banville and B. Langley (2013) Mitigating the impact of ionospheric cycle 
+ * slips in GNSS observations 
  *
- */ 
+ */  
 
-#ifndef GPSTK_CYCLESLIPESTIMATOR_HPP
+#ifndef GPSTK_CYCLESLIPESTIMATOR_HPP 
 #define GPSTK_CYCLESLIPESTIMATOR_HPP
 
 //============================================================================
@@ -31,31 +34,52 @@
 //  Dagoberto Salazar - gAGE ( http://www.gage.es ). 2007, 2008, 2011
 //
 //============================================================================
-// Date     :	2017/06/01 - 2017/06/03
+// Date     :	2017/08/15 - 2017/08/16
 // Version	:	0.0
 //	Author(s):	Lei Zhao, a Ph.D. candiate
 // School of Geodesy and Geomatics, Wuhan University
 //============================================================================
 
-#include "ProcessingClass.hpp"
+
+
+
+#include "ProcessingClass.hpp" 
 
 namespace gpstk
 {
 
-	class CycleSlipEstimator : public ProcessingClass
-	{
-	public:
 
-		/* Common constructor 
+
+		/*** Usage
 		 *
-		 * @param staticRec
+		 *
 		 *
 		 */
-		CycleSlipEstimator( )
-			: firstTime( true ), 
-			  codeType1( TypeID::prefitP1 ), codeType2( TypeID::prefitP2 )
-		{ }; 
+	
+	class CycleSlipEstimator : public ProcessingClass
+	{
+		public:
+			
+			/* Default constructor 
+			 * 
+			 */
+			CycleSlipEstimator()
+				: deltaTMax(61.0), staticReceiver(true), 
+				  useTimeDifferencedLI(false) 
+			{};
 
+			/* Common Constructor 
+			 *
+			 * @param usrSys 
+			 * @param obsTypes 
+			 *
+			 */
+			CycleSlipEstimator( const SatID::SatelliteSystem& usrSys,
+										 const TypeIDSet& usrObsTypes )
+										 : sys(usrSys), obsTypes(usrObsTypes),
+											staticReceiver(true), deltaTMax(61.0),
+											useTimeDifferencedLI(false) 
+			{};
 
 
          /** Returns a satTypeValueMap object, adding the new data generated
@@ -86,7 +110,7 @@ namespace gpstk
           */
       virtual gnssSatTypeValue& Process(gnssSatTypeValue& gData)
          throw(ProcessingException)
-      { (*this).Process(gData.header.epoch, gData.body); return gData; };
+		{ (*this).Process(gData.header.epoch, gData.body); return gData;  };
 
 
 			/** Set systems and observation types  
@@ -95,58 +119,101 @@ namespace gpstk
 			 * @param ots			obs types of sys
 			 */
 			/// 
-		virtual CycleSlipEstimator& setSysObsTypes( 
-										const SatID::SatelliteSystem& sys,
-										TypeIDSet& ots    )
-		{	sysObsTypes[ sys ] = ots; return (*this); }
+		virtual CycleSlipEstimator& addSysObsTypes( 
+										const SatID::SatelliteSystem& usrSys,
+										TypeIDSet& usrObsTypes )
+		{ sys  = usrSys; obsTypes = usrObsTypes; return (*this); }
 
 
-			/// Get frequency ratio constant miu for specifed system 
-			/// and frequency str
-
-         /// Returns a string identifying this object.
-      virtual std::string getClassName(void) const;
+			///  Get LI time-diff data
+		virtual satTypeValueMap& getSatLITimeDiffData()
+		{ return satLITimeDiffData; }
 
 
-         /// Destructor
-      virtual ~CycleSlipEstimator() {};
+			/// Set using info of time-differenced LI 
+		virtual CycleSlipEstimator& setUsingTimeDiffLI( bool use )
+		{ useTimeDifferencedLI = use; return (*this); };
 
+			/** Set LI  types  
+			 *
+			 * @param sys			sat systems 
+			 * @param ots			obs types of sys
+			 */
+			/// 
+		virtual CycleSlipEstimator& setLITypes( TypeIDSet& usrLITypes )
+		{ liTypes = usrLITypes; return (*this); }
+
+
+			/// Set receiver state
+		virtual CycleSlipEstimator& setReceiverStatic( bool staticRec )
+		{ staticReceiver = staticRec; return (*this); }
+
+
+			/// Returns a string identifying this object.
+		virtual std::string getClassName(void) const;
+
+			/// Destructor
+		virtual ~CycleSlipEstimator() {};
+
+
+		private:
+
+				/// Sat sys 
+			SatID::SatelliteSystem sys;
+
+				/// Obs types 
+			TypeIDSet obsTypes; 
+
+				/// LI types 
+			TypeIDSet liTypes;
+
+				/// Receiver state
+			bool staticReceiver;
+
+				/// Max limit of time gap 
+			double deltaTMax;
+
+				/// Use external ionosperic delay info 
+			bool useTimeDifferencedLI;
+
+				/// Struct to store sat data of former epoch
+			satEpochTypeValueMap satFormerData;
 			
 
-	private:
+				/// Sat time-differenced code data
+			satTypeValueMap satTimeDiffData;
+
+				/// Sat time-differenced ionospheric delay data 
+			satTypeValueMap satLITimeDiffData;
 			
-			/// Observation types used in this class 
-		TypeIDList obsTypeList;
-		TypeID codeType1;
-		TypeID codeType2;
 
-			/// Pair of sys and obsType 
-		std::map<SatID::SatelliteSystem, TypeIDSet> sysObsTypes; 
+			/* Get filter data
+			 *
+			 * Return the flag indicating whether the phase is continious in time
+			 * and there are LLI cycle-slip declaration(TO DO!!!)
+			 *
+			 * @param epoch
+			 * @param sat
+			 * @param tvMap		data related to this sat
+			 * @param epochFlag 
+			 */ 
+		virtual bool getSatFilterData( const CommonTime& epoch, 
+													  const SatID& sat,
+													  typeValueMap& tvMap, 
+													  const short& epochFlag ); 
 
-			/// Receiver state
-		bool staticReceiver; 
-
-			/// First epoch Flag
-		bool firstTime;
-
-			/// Initialization method 
-		void Init(void);
-
-			/// A structure used to store filter data for a SV
-		struct filterData 
-		{
-			int windowSize; 
-			double formerP1;
-			double formerP2; 
-		};	// End of ' struct filterData '
+			/** Model time-differenced code data
+			 *
+			 * ...
+			 *
+			 */ 
+		virtual SatIDSet  modelTimeDifferencedData( satTypeValueMap& stvm );
 
 
-	};   // End of class CycleSlipEstimator
-
-}   // End of namespace gpstk   
+	};   // End of class declaration
 
 
 
-
+}   // End of namespace gpstk 
 
 #endif	// GPSTK_CYCLESLIPESTIMATOR_HPP 

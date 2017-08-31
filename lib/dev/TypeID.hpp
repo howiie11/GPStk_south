@@ -143,6 +143,10 @@ namespace gpstk
          LC,        ///< Phase-based ionosphere-free combination
          PI,        ///< Code-based ionospheric combination
          LI,        ///< Phase-based ionospheric combination
+
+			deltaLI,	  ///< Time-differenced LI 
+			deltaDeltaLI,	  ///< Time-differenced LI 
+
          Pdelta,    ///< Narrow-lane combination
          Ldelta,    ///< Wide-lane combination
          MWubbena,  ///< Melbourne-Wubbena combination
@@ -570,6 +574,8 @@ namespace gpstk
          a4,        ///< polynominal coefficient
          a5,        ///< polynominal coefficient
 
+			epoch,		  ///< for convenient time index
+
             // Handy dummy types for non-standard processing
          dummy0,    ///< Generic, undefined type #0
          dummy1,    ///< Generic, undefined type #1
@@ -639,14 +645,17 @@ namespace gpstk
          /// Assignment operator
       virtual TypeID operator=(const TypeID& right);
 
+			/// Convert TypeID to RinexObsType 
+		RinexObsType ConvertToRinexObsType( const SatID::SatelliteSystem& sys );  
 
 			/// get obsType information according to obs TypeID
 		bool IsCarrierPhase();
 
 			/* get Frequency string
+			 * @pos starting position, from 0
 		    * @param length  the length of substr
 			 */
-		virtual int  getFreqBand( int length = 1 );
+		virtual int  getFreqBand( int pos = 1, int length = 1 );
 			
          /// Convenience output method
       virtual std::ostream& dump(std::ostream& s) const;

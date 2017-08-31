@@ -45,12 +45,14 @@ namespace gpstk
 		SatID galileoSat(-1, SatID::systemGalileo );
 
 			// GPS 
-		systemObsPrecisionMap[ gpsSat ][ TypeID::P1 ] = 0.25; // unit meter 
-		systemObsPrecisionMap[ gpsSat ][ TypeID::P2 ] = 0.25;  
-		systemObsPrecisionMap[ gpsSat ][ TypeID::C5 ] = 0.15;  
-		systemObsPrecisionMap[ gpsSat ][ TypeID::L1 ] = 0.001;  
-		systemObsPrecisionMap[ gpsSat ][ TypeID::L2 ] = 0.0013;  
-		systemObsPrecisionMap[ gpsSat ][ TypeID::L5 ] = 0.0013;  
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitC1 ] = 0.25; // unit meter 
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitP1 ] = 0.50; // unit meter 
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitP2 ] = 0.50;  
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitC5 ] = 0.15;  
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitL1 ] = 0.001;  
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitL2 ] = 0.0013;  
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitL5 ] = 0.0013;  
+		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitPC ] = 1;  
 
 			// Galileo 
 		systemObsPrecisionMap[ galileoSat ][ TypeID::C1 ] = 0.2; // unit meter 

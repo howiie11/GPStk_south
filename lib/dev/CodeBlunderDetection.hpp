@@ -65,7 +65,7 @@ namespace gpstk
 			 */
 			CodeBlunderDetection()
 				: deltaTMax(61.0), staticReceiver(true), 
-				  useExternalIonoDelayInfo(true) 
+				  useTimeDifferencedLI(false) 
 			{};
 
 			/* Common Constructor 
@@ -78,7 +78,7 @@ namespace gpstk
 										 const TypeIDSet& usrCodeTypes )
 										 : sys(usrSys), codeTypes(usrCodeTypes),
 											staticReceiver(true), deltaTMax(61.0),
-											useExternalIonoDelayInfo(true) 
+											useTimeDifferencedLI(false) 
 			{};
 
 
@@ -130,6 +130,10 @@ namespace gpstk
 		{ return satLITimeDiffData; }
 
 
+			/// Set using info of time-differenced LI 
+		virtual CodeBlunderDetection& setUsingTimeDiffLI( bool use )
+		{ useTimeDifferencedLI = use; return (*this); };
+
 			/** Set LI  types  
 			 *
 			 * @param sys			sat systems 
@@ -138,6 +142,11 @@ namespace gpstk
 			/// 
 		virtual CodeBlunderDetection& setLITypes( TypeIDSet& usrLITypes )
 		{ liTypes = usrLITypes; return (*this); }
+
+
+			/// Set receiver state
+		virtual CodeBlunderDetection& setReceiverStatic( bool staticRec )
+		{ staticReceiver = staticRec; return (*this); }
 
 
 			/// Returns a string identifying this object.
@@ -165,7 +174,7 @@ namespace gpstk
 			double deltaTMax;
 
 				/// Use external ionosperic delay info 
-			bool useExternalIonoDelayInfo;
+			bool useTimeDifferencedLI;
 
 				/// Struct to store sat data of former epoch
 			satEpochTypeValueMap satFormerData;
@@ -192,6 +201,13 @@ namespace gpstk
 													  const SatID& sat,
 													  typeValueMap& tvMap, 
 													  const short& epochFlag ); 
+
+			/** Model time-differenced code data
+			 *
+			 * ...
+			 *
+			 */ 
+		virtual SatIDSet  modelTimeDifferencedCode( satTypeValueMap& stvm );
 
 
 	};   // End of class declaration

@@ -93,6 +93,8 @@ namespace gpstk
       tStrings[LC]         = "LC";
       tStrings[PI]         = "PI";
       tStrings[LI]         = "LI";
+      tStrings[deltaLI]    = "Time-differenced_LI";
+      tStrings[deltaDeltaLI]    = "Double_time-differenced_LI";
       tStrings[Pdelta]     = "Pdelta";
       tStrings[Ldelta]     = "Ldelta";
       tStrings[MWubbena]   = "MWubbena";
@@ -429,6 +431,8 @@ namespace gpstk
       tStrings[a4]         = "a4";
       tStrings[a5]         = "a5";
 
+      tStrings[epoch]         = "epoch";
+
       tStrings[dummy0]     = "dummy0";
       tStrings[dummy1]     = "dummy1";
       tStrings[dummy2]     = "dummy2";
@@ -445,6 +449,36 @@ namespace gpstk
 
 
 		// Added by Lei Zhao vvv 
+	RinexObsType TypeID::ConvertToRinexObsType( const SatID::SatelliteSystem& sys )
+	{
+
+		TypeID type(*this);
+
+		if( sys == SatID::systemGPS )
+		{
+				// For L1: C1 P1 L1 D1 S1 
+			if( type == TypeID::P1 || type == TypeID::prefitP1 )
+			{ return RinexObsHeader::P1; }
+			if( type == TypeID::L1 || type == TypeID::prefitL1 )
+			{ return RinexObsHeader::L1; }
+
+				// For L2: C2 P2 L2 D2 S2
+			if( type == TypeID::P2 || type == TypeID::prefitP2 )
+			{ return RinexObsHeader::P2; }
+			if( type == TypeID::L2 || type == TypeID::prefitL2 )
+			{ return RinexObsHeader::L2; }
+
+		}
+		else if( sys == SatID::systemGalileo )
+		{
+
+		}
+
+
+	}   // End of ''
+
+
+
 	bool TypeID::IsCarrierPhase( )
 	{
 		std::string tidStr( StringUtils::asString( (*this) ) );
@@ -453,11 +487,11 @@ namespace gpstk
 
 	}
 
-	int TypeID::getFreqBand( int length )
+	int TypeID::getFreqBand( int pos, int length )
 	{
 		std::string tidStr( StringUtils::asString( (*this) ) );
 
-		return StringUtils::asInt( StringUtils::subString( tidStr, 1, length ) );
+		return StringUtils::asInt( StringUtils::subString( tidStr, pos, length ) );
 	} 
    
 		// ^^^ 
@@ -568,6 +602,7 @@ namespace gpstk
      return -1;
    }
 
+	
    TypeID::ValueType ConvertToTypeID(const RinexObsType& rot,
                                      const RinexSatID& sat)
    {

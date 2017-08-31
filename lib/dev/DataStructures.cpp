@@ -3092,6 +3092,43 @@ in matrix and number of types do not match") );
    }  // End of method 'satTypeValueMap::dump()'
 
 
+	size_t CountFreqNum( const SatID::SatelliteSystem sys,
+								const TypeIDSet& tidSet )
+	{
+		size_t counter(0);
+		
+		int formerBand(-1), currentBand(-1); 
+		set<int> formerBandSet;
+		
+		for( TypeIDSet::const_iterator itType = tidSet.begin(); 
+			  itType != tidSet.end(); 
+			  ++itType )
+		{
+			TypeID type( *itType );
+			RinexObsType rot( type.ConvertToRinexObsType(sys) );
+
+				// Get the band 
+			currentBand = GetCarrierBand( rot ); 
+
+
+			if( formerBandSet.find(currentBand) == formerBandSet.end() ) 
+			{
+					// This means a new band 
+				counter++;
+
+					// Update formerBnad
+				formerBandSet.insert( currentBand );
+			}
+
+		}   // End of ' for( TypeIDSet::const_iterator itType ; ...'
+
+		return counter;
+
+	}   // End of ' size_t CountFreqNum( const SatID::SatelliteSystem sys; ... '
+
+
+
+
 
       // stream output for satTypeValueMap
    std::ostream& operator<<( std::ostream& s,
