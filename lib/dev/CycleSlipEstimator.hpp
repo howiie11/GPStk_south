@@ -63,10 +63,14 @@ namespace gpstk
 			/* Default constructor 
 			 * 
 			 */
-			CycleSlipEstimator()
-				: deltaTMax(61.0), staticReceiver(true), 
-				  useTimeDifferencedLI(false) 
-			{};
+//			CycleSlipEstimator()
+//				: deltaTMax(61.0), staticReceiver(true), 
+//				  useTimeDifferencedLI(false) 
+//			{ 
+//				// Get band list first from the obsTypes defined by the user 
+//				// But now only GPS 
+//				getBandList();
+//			};
 
 			/* Common Constructor 
 			 *
@@ -79,7 +83,13 @@ namespace gpstk
 										 : sys(usrSys), obsTypes(usrObsTypes),
 											staticReceiver(true), deltaTMax(61.0),
 											useTimeDifferencedLI(false) 
-			{};
+			{
+				// Get band list first from the obsTypes defined by the user 
+				// But now only GPS 
+				getBandList();
+				sysNumFreq[SatID::systemGPS][TypeID::numFreq] = 
+													CountFreqNum( SatID::systemGPS, obsTypes );
+			};
 
 
          /** Returns a satTypeValueMap object, adding the new data generated
@@ -152,6 +162,12 @@ namespace gpstk
 			/// Returns a string identifying this object.
 		virtual std::string getClassName(void) const;
 
+			/// Return a frequency index given a band in obsTypes
+		virtual void getBandList();
+
+			/// Return a frequency index given a band in obsTypes
+		virtual int getBandIndex( int band );
+
 			/// Destructor
 		virtual ~CycleSlipEstimator() {};
 
@@ -163,6 +179,12 @@ namespace gpstk
 
 				/// Obs types 
 			TypeIDSet obsTypes; 
+
+				/// Band list determined by obsTypes
+			std::set<int> bandSet;
+
+				/// Num of frequency used, which should be sat depentdent 
+			SysTypeValueMap sysNumFreq;
 
 				/// LI types 
 			TypeIDSet liTypes;
@@ -176,12 +198,14 @@ namespace gpstk
 				/// Use external ionosperic delay info 
 			bool useTimeDifferencedLI;
 
+				/// postfit residuals 
+			satTypeValueMap satPostfitRes;
+
 				/// Struct to store sat data of former epoch
 			satEpochTypeValueMap satFormerData;
 			
-
 				/// Sat time-differenced code data
-			satTypeValueMap satTimeDiffData;
+//			satTypeValueMap satTimeDiffData;
 
 				/// Sat time-differenced ionospheric delay data 
 			satTypeValueMap satLITimeDiffData;
@@ -197,21 +221,26 @@ namespace gpstk
 			 * @param tvMap		data related to this sat
 			 * @param epochFlag 
 			 */ 
-		virtual bool getSatFilterData( const CommonTime& epoch, 
-													  const SatID& sat,
-													  typeValueMap& tvMap, 
-													  const short& epochFlag ); 
+		virtual bool  getSatFilterData( const CommonTime& epoch, 
+												  const SatID& sat,
+												  typeValueMap& tvMap, 
+												  const short& epochFlag, 
+												  satTypeValueMap& satTimeDiffData); 
 
 			/** Model time-differenced code data
 			 *
-			 * ...
+			 * @param stvm
+			 * @param csVec
+			 * @param csCov
 			 *
 			 */ 
-		virtual SatIDSet  modelTimeDifferencedData( satTypeValueMap& stvm );
+		virtual SatIDSet  modelTimeDifferencedData( satTypeValueMap& satTimeDiffData,
+																  satTypeValueMap& stvm,
+																  Vector<double>& csVec, 
+																  Matrix<double>& csCov );
 
 
 	};   // End of class declaration
-
 
 
 }   // End of namespace gpstk 
