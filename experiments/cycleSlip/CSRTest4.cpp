@@ -311,6 +311,11 @@ private:
                     const gnssRinex& gData,
                     int   precision = 4 );
 
+		// Method to print Cycle Slip estimation model
+	void printCycleSlipEstimationResiduals( ofstream& csModelFile,
+														 ofstream& srFile,
+														 CommonTime& time, 
+														 CycleSlipEstimator& csEstimator );
 
 }; // End of 'ppp' class declaration
 
@@ -501,8 +506,73 @@ void ppp::printModel( ofstream& modelfile,
 }  // End of method 'ppp::printModel()'
 
 
+	// Method to print Cycle Slip estimation model
+void ppp::printCycleSlipEstimationResiduals( ofstream& csModelFile,
+															ofstream& srFile,
+		  												   CommonTime& time, 
+													      CycleSlipEstimator& csEstimator )
+{
 
+		// Valid sat set
+	SatIDSet satSet( csEstimator.getValidSatSet() );
 
+	size_t numSats( satSet.size() );
+	
+	if( numSats > 0 )
+	{
+				// Print epoch
+		srFile << static_cast<YDSTime>(time).year   << "  ";    // Year           #1
+		srFile << static_cast<YDSTime>(time).doy	 << "  ";    // DayOfYear      #2
+		srFile << static_cast<YDSTime>(time).sod    << "  ";    // SecondsOfDay   #3
+	
+			// Print valid sat num
+		srFile << "numOfSats " << numSats << " ";
+	
+			// Print success rate
+		double sr( csEstimator.getSuccessRate() );
+		srFile << "success_rate " << sr << endl;
+	}
+
+	for(SatIDSet::const_iterator itSat = satSet.begin(); 
+		 itSat != satSet.end(); 
+		 ++itSat )
+	{
+			// SatID 
+		SatID sat( *itSat );
+
+			// Print epoch
+		csModelFile << static_cast<YDSTime>(time).year   << "  ";    // Year           #1
+	   csModelFile << static_cast<YDSTime>(time).doy	 << "  ";    // DayOfYear      #2
+	   csModelFile << static_cast<YDSTime>(time).sod    << "  ";    // SecondsOfDay   #3
+
+			// Print satellite information (Satellite system and ID number)
+		csModelFile << *itSat << " ";
+
+			// Print the resuduals one by one, which related to the obsTypes
+		TypeIDSet obsTypes( csEstimator.getObsTypes(sat.system) );
+			
+			// Loop through obsTypes
+		for( TypeIDSet::const_iterator itObs = obsTypes.begin(); 
+			  itObs != obsTypes.end(); 
+			  ++itObs )
+		{
+				// Current type
+			TypeID type( *itObs ); 
+//			double value( csEstimator.getPostfitResidual( sat, type ) );
+			
+				// Convert the prefitType to postfitType 
+			TypeID postType( type.ConvertToPostfitTypeID() );
+//			csModelFile << postType << " " << value << " ";
+
+		} // End of ' for( TypeIDSet::const_iterator itObs ... '
+
+			// Add the TypeID::postfitDeltaIono
+//		double postDeltaIono( csEstimator.getPostfitResidual( sat, TypeID::postfitDeltaIono )); 
+		double postDeltaIono( 0.0 ); 
+		csModelFile <<  "postfitDeltaIono " << postDeltaIono << endl;
+		
+	} // End of ' for(SatIDSet::const_iterator itSat ... '
+}
 
    // Method that will be executed AFTER initialization but BEFORE processing
 void ppp::spinUp()
@@ -1478,7 +1548,7 @@ void ppp::process()
 //      pList.push_back(eclipsedSV);       // Add to processing list
 //
 //
-//         // Object to compute gravitational delay effects
+         // Object to compute gravitational delay effects
 //      GravitationalDelay grDelay(nominalPos);
 //      pList.push_back(grDelay);       // Add to processing list
 //
@@ -1536,10 +1606,6 @@ void ppp::process()
 //      pList.push_back(svPcenter);       // Add to processing list
 
 
-
-
-
-
 			// Now compute prefit residuals 
 		ComputeLinearMGEX linearPrefit;
 		if( employGPS )
@@ -1550,25 +1616,48 @@ void ppp::process()
 			linearPrefit.addLinear( SatID::systemGPS, comb.l2Prefit );
 		}
 
+		if( employGALILEO )
+		{
+			linearPrefit.addLinear( SatID::systemGalileo, comb.c1PrefitGalileo );
+			linearPrefit.addLinear( SatID::systemGalileo, comb.c5PrefitGalileo );
+			linearPrefit.addLinear( SatID::systemGalileo, comb.c7PrefitGalileo );
+			linearPrefit.addLinear( SatID::systemGalileo, comb.l1PrefitGalileo );
+			linearPrefit.addLinear( SatID::systemGalileo, comb.l5PrefitGalileo );
+			linearPrefit.addLinear( SatID::systemGalileo, comb.l7PrefitGalileo );
+		}
+
       pList.push_back(linearPrefit);       // Add to processing list
 
 
 			// Cycle-slip detection and correction
-			// By default, the receiver is static
-		CycleSlipEstimator csEstimator;
+		TypeIDSet obsTypesG, obsTypesE;
+		obsTypesG.insert(TypeID::prefitP1);
+		obsTypesG.insert(TypeID::prefitP2);
+		obsTypesG.insert(TypeID::prefitL2);
+		obsTypesG.insert(TypeID::prefitL1);
+//		obsTypesG.insert(TypeID::prefitC5);
+//		obsTypesG.insert(TypeID::prefitL5);
 
-		TypeIDSet obsTypes;
-		obsTypes.insert(TypeID::prefitP1);
-		obsTypes.insert(TypeID::prefitP2);
-		obsTypes.insert(TypeID::prefitL1);
-		obsTypes.insert(TypeID::prefitL2);
-		csEstimator.addSysObsTypes( SatID::systemGPS, obsTypes );
+		obsTypesE.insert( TypeID::prefitC1);
+		obsTypesE.insert( TypeID::prefitC5);
+		obsTypesE.insert( TypeID::prefitC7);
+		obsTypesE.insert( TypeID::prefitL1);
+		obsTypesE.insert( TypeID::prefitL5);
+		obsTypesE.insert( TypeID::prefitL7);
 
+		CycleSlipEstimator csEstimator( SatID::systemGPS, obsTypesG );
+		csEstimator.addSystemObsTypes( SatID::systemGalileo, obsTypesE );
+
+			//	Set receiver state 
 		csEstimator.setReceiverStatic( false );
+
+			// Use LI info 
+		csEstimator.useLI( true );
+		csEstimator.setLITypes( SatID);
+
 
 		pList.push_back( csEstimator );
 		
-
 
          // Object to compute linear combinations for cycle slip detection
       ComputeLinearMGEX linear1;
@@ -2032,9 +2121,16 @@ void ppp::process()
 
          // Let's check if we are going to print the model
       bool printmodel( confReader.getValueAsBoolean( "printModel" ) );
+      bool printCSEstModel( confReader.getValueAsBoolean( "printCycleSlipEstimationModel" ) );
 
       string modelName;
       ofstream modelfile;
+
+		string csModelFileName;
+		ofstream csModelFile;
+
+		string srFileName;
+		ofstream srFile;
 
          // Prepare for model printing
       if( printmodel )
@@ -2044,6 +2140,14 @@ void ppp::process()
          modelfile.open( modelName.c_str(), ios::out );
       }
 
+		if( printCSEstModel )
+		{
+			csModelFileName = outputFileName + ".model.cs";
+			csModelFile.open( csModelFileName.c_str(), ios::out );
+			srFileName = outputFileName + ".model.cs.sr";
+			srFile.open( srFileName.c_str(), ios::out );
+		}
+
          //// *** Now comes the REAL forwards processing part *** ////
 
 		int counter(0);
@@ -2051,11 +2155,11 @@ void ppp::process()
       while(rin >> gRin)
       {
 
-			counter++;
-			if( counter >3 )
-			{
-				exit(-1);
-			}
+//			counter++;
+//			if( counter >3 )
+//			{
+//				break;;
+//			}
 
             // Store current epoch
          CommonTime time(gRin.header.epoch);
@@ -2075,8 +2179,6 @@ void ppp::process()
 			{
 				oceanLoad = ocean.getOceanLoading( station, time ); 
 			}
-
-
 
             // Compute solid, oceanic and pole tides effects at this epoch
          Triple tides( solid.getSolidTide( time, nominalPos )  +
@@ -2159,6 +2261,15 @@ void ppp::process()
             continue;
          }
 
+			// Test code vvv
+			if( printCSEstModel )
+			{
+				printCycleSlipEstimationResiduals( csModelFile,
+															  srFile,
+															  gRin.header.epoch,
+															  csEstimator );
+			}
+			// Test code ^^^ 
 
             // Ask if we are going to print the model
          if ( printmodel )
@@ -2204,6 +2315,14 @@ void ppp::process()
             // Close model file for this station
          modelfile.close();
       }
+		if( printCSEstModel )
+		{
+			cout << csModelFileName << " is generated! " << endl;
+			csModelFile.close();
+
+			cout << srFileName << " is generated! " << endl;
+			srFile.close();
+		}
 
          //// *** Forwards processing part is over *** ////
 

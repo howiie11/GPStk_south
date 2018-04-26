@@ -562,6 +562,27 @@ namespace gpstk
    }  // End of method 'satTypeValueMap::extractSatID()'
 
 
+			/// Returns a satTypeValueMap with only the specified system.
+			/// @param sys 
+	satTypeValueMap satTypeValueMap::extractSatSystem(const SatID::SatelliteSystem& sys) const
+	{
+		satTypeValueMap stvMap;
+		
+		for( satTypeValueMap::const_iterator itObs = (*this).begin();
+			  itObs != (*this).end();
+			  ++itObs )
+		{
+			SatID sat( itObs -> first );
+			
+			if( sat.system == sys )
+			{
+				stvMap[ sat ] = itObs -> second;
+			}
+
+		} // End of ' for( satTypeValueMap::const_iterator itObs ... '
+
+		return stvMap;
+	}
 
       // Modifies this object, keeping only this satellite.
       // @param satellite Satellite to be kept.
@@ -645,6 +666,52 @@ namespace gpstk
       return theMap;
 
    }  // End of method 'satTypeValueMap::extractTypeID()'
+
+
+			/// Returns a satTypeValueMap with only these types of data regarding
+			/// the given satellite system.
+			/// @param sysTypeData
+         /// @param typeSet Set (TypeIDSet) containing the types of data
+         ///                to be extracted.
+      satTypeValueMap satTypeValueMap::extractTypeID( const SysTypeIDSetMap& sysTypeData )
+			const
+		{
+
+			satTypeValueMap theMap;
+
+				// Loop through 'sysTypeData'
+			for( satTypeValueMap::const_iterator ite = (*this).begin();
+				  ite != (*this).end(); 
+				  ++ite )
+			{
+				SatID sat( ite -> first );
+
+					// System
+				SatID::SatelliteSystem sys( sat.system );
+				
+				SysTypeIDSetMap::const_iterator it = sysTypeData.find( sys );	
+				if( it != sysTypeData.end() )
+				{
+					TypeIDSet typeIDSet( it -> second );
+					typeValueMap tvMap( (*ite).second.extractTypeID( typeIDSet ));
+					if( tvMap.size() > 0 )
+					{
+						theMap[ sat ] = tvMap;
+					}
+				}
+				else
+				{
+					Exception e(" No member of class: SysTypeIDSetMap ");
+					GPSTK_THROW(e);
+				}
+
+			} // End of ' for( satTypeValueMap::const_iterator ite ... '
+
+
+			return theMap;
+		}
+
+
 
 
 
@@ -989,6 +1056,21 @@ in matrix and number of types do not match") );
       }	
 
 	}   // End of ' double satTypeValueMap::getValue( const SatID& satellite, ...'
+
+		// Returns a reference from SysTypeIDSetMap given a sys
+	TypeIDSet& SysTypeIDSetMap::operator()( const SatID::SatelliteSystem sys )
+	{
+		SysTypeIDSetMap::iterator it = (*this).find( sys );
+		if( it != (*this).end() )
+		{
+			return it -> second;
+		} 
+		else
+		{
+			GPSTK_THROW( ValueNotFound("SysTypeIDSetMap: value no found") );
+		}
+
+	} // End of ' TypeIDSet& SysTypeIDSetMap::operator() '
 
 
       // Returns a reference to the typeValueMap with corresponding SatID.
@@ -3543,75 +3625,19 @@ in matrix and number of types do not match") );
       Rinex3ObsData::DataMap::const_iterator it;
       for(it=rod.obs.begin(); it != rod.obs.end(); it++)
       {
-				// Test code vvv
-			bool validPriorType=true;
-				// Test code ^^^ 
          RinexSatID sat(it->first);
+
 
          typeValueMap tvMap;
 
          map<std::string,std::vector<RinexObsID> > mapObsTypes(roh.mapObsTypes);
-         map<std::string,std::vector<RinexObsID> >priorMapObsTypes(roh.validMapObsTypes);
          const vector<RinexObsID> types = mapObsTypes[sat.toString().substr(0,1)];
-         vector<RinexObsID> priorTypes = priorMapObsTypes[sat.toString().substr(0,1)];
 
-			// Debug code vvv
-//			std::cout << "types: " <<  types.size() << std::endl;
-//			for(size_t i=0; i<types.size(); i++)
-//			{
-//				std::cout << types[i] << std::endl;
-//			}
-//			std::cout << "priorTypes: " << std::endl;
-
-			// Test code vvv
-				// First make sure the prior type is valid 
-			for(size_t i=0; i<types.size(); i++)
-			{
-					// Find present type in priorTypes
-				vector<RinexObsID>::iterator iter = find( priorTypes.begin(),
-																	   priorTypes.end(),
-																		types[i]); 
-				if( iter != priorTypes.end() )
-				{
-						// This is a prior type
-						// test its value
-					if( it->second[i].data == 0.0 )
-					{
-							// Invalid prior type
-						validPriorType = false;	
-						break;
-					}
-				}
-			}
-			// Test code ^^^ 
-
-			// Debug code ^^^ 
          for(size_t i=0; i<types.size(); i++)
          {
-					// Find present type in priorTypes
-				vector<RinexObsID>::iterator iter = find(priorTypes.begin(),
-																	  priorTypes.end(),
-																	  types[i]);
-				if( validPriorType && iter == priorTypes.end() )
-				{
-						// Here means that this type is not prior
-						// We desert this type
-					continue;
-				}  // End of 'if( iter == priorTypes.end() ) '
-
-				if( it->second[i].data == 0.0 )
-				{
-						// Here means zero value type
-						// just continue
-					continue;
-				}
-
-
             TypeID type = ConvertToTypeID(types[i],sat);
 
-
-            
-				const int n = GetCarrierBand(types[i]);
+            const int n = GetCarrierBand(types[i]);
 
             if(types[i].type==ObsID::otPhase)   // Phase
             {
@@ -3661,5 +3687,134 @@ in matrix and number of types do not match") );
 
       return theMap;
    }
+
+
+//   satTypeValueMap satTypeValueMapFromRinex3ObsData(
+//                         const Rinex3ObsHeader& roh, const Rinex3ObsData& rod )
+//   {
+//      // We need to declare a satTypeValueMap
+//      satTypeValueMap theMap;
+//
+//      Rinex3ObsData::DataMap::const_iterator it;
+//      for(it=rod.obs.begin(); it != rod.obs.end(); it++)
+//      {
+//				// Test code vvv
+//			bool validPriorType=true;
+//				// Test code ^^^ 
+//         RinexSatID sat(it->first);
+//
+//         typeValueMap tvMap;
+//
+//         map<std::string,std::vector<RinexObsID> > mapObsTypes(roh.mapObsTypes);
+//         map<std::string,std::vector<RinexObsID> >priorMapObsTypes(roh.validMapObsTypes);
+//         const vector<RinexObsID> types = mapObsTypes[sat.toString().substr(0,1)];
+//         vector<RinexObsID> priorTypes = priorMapObsTypes[sat.toString().substr(0,1)];
+//
+//			// Debug code vvv
+////			std::cout << "types: " <<  types.size() << std::endl;
+////			for(size_t i=0; i<types.size(); i++)
+////			{
+////				std::cout << types[i] << std::endl;
+////			}
+////			std::cout << "priorTypes: " << std::endl;
+//
+//			// Test code vvv
+//				// First make sure the prior type is valid 
+//			for(size_t i=0; i<types.size(); i++)
+//			{
+//					// Find present type in priorTypes
+//				vector<RinexObsID>::iterator iter = find( priorTypes.begin(),
+//																	   priorTypes.end(),
+//																		types[i]); 
+//				if( iter != priorTypes.end() )
+//				{
+//						// This is a prior type
+//						// test its value
+//					if( it->second[i].data == 0.0 )
+//					{
+//							// Invalid prior type
+//						validPriorType = false;	
+//						break;
+//					}
+//				}
+//			}
+//			// Test code ^^^ 
+//
+//			// Debug code ^^^ 
+//         for(size_t i=0; i<types.size(); i++)
+//         {
+//					// Find present type in priorTypes
+//				vector<RinexObsID>::iterator iter = find(priorTypes.begin(),
+//																	  priorTypes.end(),
+//																	  types[i]);
+//				if( validPriorType && iter == priorTypes.end() )
+//				{
+//						// Here means that this type is not prior
+//						// We desert this type
+//					continue;
+//				}  // End of 'if( iter == priorTypes.end() ) '
+//
+//				if( it->second[i].data == 0.0 )
+//				{
+//						// Here means zero value type
+//						// just continue
+//					continue;
+//				}
+//
+//
+//            TypeID type = ConvertToTypeID(types[i],sat);
+//
+//
+//            
+//				const int n = GetCarrierBand(types[i]);
+//
+//            if(types[i].type==ObsID::otPhase)   // Phase
+//            {
+//               // TODO:: handle glonass data later(yanweigps)
+//               tvMap[type] = it->second[i].data*getWavelength(sat,n);
+//
+//               // n=1 2 5 6 7 8
+//               if(n==1)
+//               {
+//                  tvMap[TypeID::LLI1] = it->second[i].lli;
+//                  tvMap[TypeID::SSI1] = it->second[i].ssi;
+//               }
+//               else if(n==2)
+//               {
+//                  tvMap[TypeID::LLI2] = it->second[i].lli;
+//                  tvMap[TypeID::SSI2] = it->second[i].ssi;
+//               }
+//               else if(n==5)
+//               {
+//                  tvMap[TypeID::LLI5] = it->second[i].lli;
+//                  tvMap[TypeID::SSI5] = it->second[i].ssi;
+//               }
+//               else if(n==6)
+//               {
+//                  tvMap[TypeID::LLI6] = it->second[i].lli;
+//                  tvMap[TypeID::SSI6] = it->second[i].ssi;
+//               }
+//               else if(n==7)
+//               {
+//                  tvMap[TypeID::LLI7] = it->second[i].lli;
+//                  tvMap[TypeID::SSI7] = it->second[i].ssi;
+//               }
+//               else if(n==8)
+//               {
+//                  tvMap[TypeID::LLI8] = it->second[i].lli;
+//                  tvMap[TypeID::SSI8] = it->second[i].ssi;
+//               }
+//            }
+//            else
+//            {
+//               tvMap[ type ] = it->second[i].data;
+//            }
+//         }
+//
+//         theMap[sat] = tvMap;
+//      }   // End loop over all the satellite
+//
+//      return theMap;
+//   }
 
 }  // End of namespace gpstk

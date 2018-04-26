@@ -40,10 +40,17 @@
 // School of Geodesy and Geomatics, Wuhan University
 //============================================================================
 
-
-
+#include <deque>
 
 #include "ProcessingClass.hpp" 
+#include "GNSSObsSTDTables.hpp"
+#include "GNSSconstants.hpp"
+#include "SolverWMS.hpp"
+#include "ARMLambda.hpp"
+#include "SuccessRate.hpp"
+#include "Stats.hpp"
+
+
 
 namespace gpstk
 {
@@ -60,6 +67,7 @@ namespace gpstk
 	{
 		public:
 			
+			typedef std::map< SatID::SatelliteSystem, std::set<int> > SysSet;
 			/* Default constructor 
 			 * 
 			 */
@@ -79,17 +87,28 @@ namespace gpstk
 			 *
 			 */
 			CycleSlipEstimator( const SatID::SatelliteSystem& usrSys,
-										 const TypeIDSet& usrObsTypes )
-										 : sys(usrSys), obsTypes(usrObsTypes),
-											staticReceiver(true), deltaTMax(61.0),
-											useTimeDifferencedLI(false) 
+									  const TypeIDSet& usrObsTypes )
+										 : staticReceiver(true), deltaTMax(61.0),
+											SR(0.0), useTimeDifferencedLI(false) 
 			{
-				// Get band list first from the obsTypes defined by the user 
-				// But now only GPS 
-				getBandList();
-				sysNumFreq[SatID::systemGPS][TypeID::numFreq] = 
-													CountFreqNum( SatID::systemGPS, obsTypes );
+					// Insert this sys<---> obsTypes pair 	
+				sysObsTypes[usrSys] = usrObsTypes;
+
+					// Get the band list of this sys, 
+					// through which, num of frequency can also be derived 
+				getBandList( usrSys );
+				//sysNumFreq[SatID::systemGPS][TypeID::numFreq] = 
+				//									CountFreqNum( SatID::systemGPS, obsTypes );
 			};
+
+
+			/* Add system <---> obsTypes pair 
+			 * 
+			 *	@param	sys
+			 * @param	obsTypes
+			 *
+			 */
+
 
 
          /** Returns a satTypeValueMap object, adding the new data generated
@@ -129,10 +148,14 @@ namespace gpstk
 			 * @param ots			obs types of sys
 			 */
 			/// 
-		virtual CycleSlipEstimator& addSysObsTypes( 
+		virtual CycleSlipEstimator& addSystemObsTypes( 
 										const SatID::SatelliteSystem& usrSys,
 										TypeIDSet& usrObsTypes )
-		{ sys  = usrSys; obsTypes = usrObsTypes; return (*this); }
+		{  
+			sysObsTypes[usrSys] = usrObsTypes; 
+			getBandList( usrSys );
+			return (*this); 
+		}
 
 
 			///  Get LI time-diff data
@@ -163,10 +186,34 @@ namespace gpstk
 		virtual std::string getClassName(void) const;
 
 			/// Return a frequency index given a band in obsTypes
-		virtual void getBandList();
+		virtual void getBandList( SatID::SatelliteSystem sys );
 
 			/// Return a frequency index given a band in obsTypes
-		virtual int getBandIndex( int band );
+		virtual int getBandIndex( SatID::SatelliteSystem sys,
+										  ObsID::ObservationType ot,
+				                    int band );
+
+			/// Return valid sat set
+		virtual SatIDSet getValidSatSet()
+		{ return validSatSet; }
+
+			/// Get obsTypes of a specified sat system
+		virtual TypeIDSet& getObsTypes( SatID::SatelliteSystem sys )
+		{ return sysObsTypes[sys]; }
+
+			/// Get Success rate
+		virtual double getSuccessRate()
+		{ return SR; }
+
+			/* Return post residual regarding to a specific sat and a specific 
+			 * type. These types should be corresponding to the data member
+			 * obsTypes.
+			 *
+			 * @param sat
+			 * @param type
+			 * 
+			 */
+		virtual double getPostfitResidual( SatID sat, TypeID type );
 
 			/// Destructor
 		virtual ~CycleSlipEstimator() {};
@@ -175,13 +222,36 @@ namespace gpstk
 		private:
 
 				/// Sat sys 
-			SatID::SatelliteSystem sys;
+//			SatID::SatelliteSystem sys;
 
 				/// Obs types 
-			TypeIDSet obsTypes; 
+//			TypeIDSet obsTypes; 
+
+				/// Sat System <---> obsTypes
+			SysTypeIDSetMap sysObsTypes;
+
+				/// sat system <---> ( obsType <---> bandSet )
+			struct SysObsTypeSet : std::map< SatID::SatelliteSystem, std::map<ObsID::ObservationType, std::set<int> > >
+			{ 
+				
+					/// Returns a reference to the bandSet of sysObsTypeBandSet with 
+					/// given sys and ot
+				std::set<int>& operator()( const SatID::SatelliteSystem sys, 
+													const ObsID::ObservationType ot )
+					throw( ValueNotFound ); 
+					/// Destructor 
+				virtual ~SysObsTypeSet() {};
+			};
+
+			SysObsTypeSet sysObsTypeBandSet;
 
 				/// Band list determined by obsTypes
-			std::set<int> bandSet;
+			
+			SysSet sysBandSet;
+//			std::set<int> bandSet;
+
+				/// Valid sat set used to estimate cycle slip
+			SatIDSet validSatSet;
 
 				/// Num of frequency used, which should be sat depentdent 
 			SysTypeValueMap sysNumFreq;
@@ -195,11 +265,15 @@ namespace gpstk
 				/// Max limit of time gap 
 			double deltaTMax;
 
+				/// SuccessRate 
+			double SR;
+
 				/// Use external ionosperic delay info 
 			bool useTimeDifferencedLI;
 
-				/// postfit residuals 
-			satTypeValueMap satPostfitRes;
+//				/// postfit residuals 
+//			satTypeValueMap satPostfitRes;
+			Vector<double> postfitResiduals;
 
 				/// Struct to store sat data of former epoch
 			satEpochTypeValueMap satFormerData;
@@ -209,7 +283,7 @@ namespace gpstk
 
 				/// Sat time-differenced ionospheric delay data 
 			satTypeValueMap satLITimeDiffData;
-			
+
 
 			/* Get filter data
 			 *
@@ -234,7 +308,7 @@ namespace gpstk
 			 * @param csCov
 			 *
 			 */ 
-		virtual SatIDSet  modelTimeDifferencedData( satTypeValueMap& satTimeDiffData,
+		virtual SatIDSet modelTimeDifferencedData( satTypeValueMap& satTimeDiffData,
 																  satTypeValueMap& stvm,
 																  Vector<double>& csVec, 
 																  Matrix<double>& csCov );

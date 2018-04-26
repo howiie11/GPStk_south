@@ -38,12 +38,8 @@
 // School of Geodesy and Geomatics, Wuhan University
 //============================================================================
 
-#include "CycleSlipEstimator.hpp"
-#include "GNSSObsSTDTables.hpp"
-#include "GNSSconstants.hpp"
-#include "SolverWMS.hpp"
-#include "Stats.hpp"
 
+#include "CycleSlipEstimator.hpp"
 namespace gpstk
 {
 		// Return a string identifying this object
@@ -114,9 +110,6 @@ namespace gpstk
 				// at the beginning of each processing epoch 
 			satLITimeDiffData.clear();
 
-				// Clear satPostfitRes, we only store them at present epoch
-			satPostfitRes.clear();
- 
  				// Loop through all the satellites
  			satTypeValueMap::iterator it;
  			for( it = gData.begin(); it != gData.end(); ++it )
@@ -134,8 +127,9 @@ namespace gpstk
 				{
 
 						// Loop through the obsTypes to get their values
-					for( TypeIDSet::const_iterator it = obsTypes.begin();
-						  it != obsTypes.end();
+					//for( TypeIDSet::const_iterator it = obsTypes.begin();
+					for( TypeIDSet::const_iterator it = sysObsTypes(sat.system).begin();
+						  it != sysObsTypes(sat.system).end();
 						  ++it )
 					{
 							// Present type	
@@ -178,11 +172,29 @@ namespace gpstk
 			{
 					// Estimate Cycle Slips  
 					// *** Only GPS observations on L1 and L2 freq *** 
-				Vector<double> cycleSlipVec( 2*numOfSats, 0.0 );
-				Matrix<double> cycleSlipCov( 2*numOfSats, 2*numOfSats, 0.0 );
+					// *** Now, GPS L1, L2; Galileo E1, E5a
+				Vector<double> cycleSlipVec;
+				Matrix<double> cycleSlipCov;
+//				Vector<double> cycleSlipVec( 2*numOfSats, 0.0 );
+//				Matrix<double> cycleSlipCov( 2*numOfSats, 2*numOfSats, 0.0 );
+
+				
+				std::cout << "model time-diff data" << std::endl;
 
 				modelTimeDifferencedData( satTimeDiffData, gData, cycleSlipVec, cycleSlipCov );
+
+				std::cout << "fix cycle slips" << std::endl;
 					// Fix the float cycle-slip estimates
+					// MLAMBDA  
+				ARMLambda mlambda;	
+
+					// Resolve
+				mlambda.resolve(cycleSlipVec, cycleSlipCov);
+
+					// Compute IB Success Rate
+				SuccessRate sr( cycleSlipCov );
+				SR = sr.getSuccessRate();
+
 			}   
 			else
 			{
@@ -198,7 +210,7 @@ namespace gpstk
  				// Thrown an exception if something unexpected happens
  			ProcessingException e( getClassName() + ":" 
  											+ u.what() );
- 
+			std::cout << "u.what: " << u.what() << std::endl; 
  			GPSTK_THROW(e);
  
  		}   // End of 'try-catch' block
@@ -273,8 +285,9 @@ namespace gpstk
 
 			// Now, everything is OK!
 			// Loop through the obsTypes to compute time-differenced values
-		for( TypeIDSet::const_iterator it = obsTypes.begin();
-			  it != obsTypes.end();
+		//for( TypeIDSet::const_iterator it = obsTypes.begin();
+		for( TypeIDSet::const_iterator it = sysObsTypes[ sat.system ].begin();
+			  it != sysObsTypes[ sat.system ].end();
 			  ++it )
 		{
 			TypeID type( *it );
@@ -291,44 +304,45 @@ namespace gpstk
 			// the consideration of elevation 
 		double wNow( tvMap(TypeID::weight) );
 		double wPrevious( satFormerData(sat)(TypeID::weight) );
-		satTimeDiffData[sat][TypeID::weight] = 1/( wNow*wNow + wPrevious*wPrevious); 
-			// Loop through the liTypes to compute time-differenced values
-		if( useTimeDifferencedLI )
-		{
-			for( TypeIDSet::const_iterator it = liTypes.begin(); 
-				  it != liTypes.end(); 
-				  ++it )
-			{
-				TypeID type( *it ), outType( *it );
+		satTimeDiffData[sat][TypeID::weight] = wNow*wNow*wPrevious*wPrevious/( wNow*wNow + wPrevious*wPrevious); 
 
-				if( type == TypeID::LI )
-				{
-					outType = TypeID::deltaLI;
-				}
-
-					// Time differenced value of this type 
-				double deltaLI(0.0);
-				deltaLI = tvMap(type) - satFormerData(sat)(type);
-
-				satLITimeDiffData[sat][outType] = deltaLI;
-
-
-					// Record deltaLI in etvb
-				etvb[outType] = deltaLI;
-
-					// Double time-differenced LI 
-				double deltaDeltaLI(0.0);
-				epochTypeValueBody::const_iterator iter = 
-												satFormerData(sat).find( TypeID::deltaLI );	
-				if( iter != satFormerData(sat).end() )
-				{
-					deltaDeltaLI = deltaLI - satFormerData(sat)(outType);
-					satLITimeDiffData[sat][ TypeID::deltaDeltaLI ] = deltaDeltaLI;
-				}
-				
-			}   // End of ' for( TypeIDSet::const_iterator it =  ... '
-
-		}   // End of ' if( useExternalIonoDelayInfo ) '
+//			// Loop through the liTypes to compute time-differenced values
+//		if( useTimeDifferencedLI )
+//		{
+//			for( TypeIDSet::const_iterator it = liTypes.begin(); 
+//				  it != liTypes.end(); 
+//				  ++it )
+//			{
+//				TypeID type( *it ), outType( *it );
+//
+//				if( type == TypeID::LI )
+//				{
+//					outType = TypeID::deltaLI;
+//				}
+//
+//					// Time differenced value of this type 
+//				double deltaLI(0.0);
+//				deltaLI = tvMap(type) - satFormerData(sat)(type);
+//
+//				satLITimeDiffData[sat][outType] = deltaLI;
+//
+//
+//					// Record deltaLI in etvb
+//				etvb[outType] = deltaLI;
+//
+//					// Double time-differenced LI 
+//				double deltaDeltaLI(0.0);
+//				epochTypeValueBody::const_iterator iter = 
+//												satFormerData(sat).find( TypeID::deltaLI );	
+//				if( iter != satFormerData(sat).end() )
+//				{
+//					deltaDeltaLI = deltaLI - satFormerData(sat)(outType);
+//					satLITimeDiffData[sat][ TypeID::deltaDeltaLI ] = deltaDeltaLI;
+//				}
+//				
+//			}   // End of ' for( TypeIDSet::const_iterator it =  ... '
+//
+//		}   // End of ' if( useExternalIonoDelayInfo ) '
 
 
 			// Update satFormerData data
@@ -363,8 +377,13 @@ namespace gpstk
 		// debug code ^^^ 
 
 			// Total num of elements in satTimeDiffData
-		satTypeValueMap obsData( satTimeDiffData.extractTypeID( obsTypes ) );
+		satTypeValueMap obsData( satTimeDiffData.extractTypeID( sysObsTypes ) );
 		size_t numOfElements( obsData.numElements() );
+
+			// Valid sat set
+		validSatSet.clear();	// clear the set of last epoch 	
+		validSatSet = satTimeDiffData.getSatID();
+
 		// debug code vvv
 		std::cout << "numOfElements: " << numOfElements << std::endl;
 		// debug code ^^^ 
@@ -380,24 +399,52 @@ namespace gpstk
 			//					e.g. L1 for GPS 
 			// numOfSats*n cycle-slip parameters, n is the number of frequency     
 
-		size_t numFreq( sysNumFreq[SatID::systemGPS][TypeID::numFreq] ); 
-		
 		size_t numCoorVar( (staticReceiver?0:3) );
 
-		size_t numUnknowns( numOfSats*( numFreq + 1 ) + 1 + numCoorVar ) ;
+			// Compute the number of unknowns 
+		size_t numUnknowns( numCoorVar + 1 );
 
+			// Record the number of Cycle-Slip parameters regarding to all the 
+			// sat system
+		size_t numAmbUnknowns( 0 );
+			
+			// Loop through the 'sysObsTypes'
+		for( SysTypeIDSetMap::const_iterator itS = sysObsTypes.begin(); 
+			  itS != sysObsTypes.end(); 
+			  ++itS )
+		{
+				// System
+			SatID::SatelliteSystem sys( itS -> first );
+
+				// ObsTypes TypeIDSet
+			TypeIDSet types( itS -> second );
+
+				// Size of types
+			size_t numTypes( types.size() );
+
+				// Num of sats with this sys
+			size_t numSats( satTimeDiffData.extractSatSystem( sys ).numSats() );
+
+				// Add ionospheric parameters, which are equal to the num of sats  
+			numUnknowns += numSats;
+
+				// Num of Phase frequency
+			size_t numPhaseFreq( sysObsTypeBandSet( sys, ObsID::otPhase).size() );
+
+				// Add ambiguity parameters, numSats*(num of Phase frequency )  
+			numUnknowns += numSats*numPhaseFreq; 
+			numAmbUnknowns += numSats*numPhaseFreq;
+				
+		} // End of ' for( SysTypeIDSetMap::const_iterator itS ... '
 
 		// debug code vvv
-		std::cout << "numOfSats: " << numOfSats << "numUnknowns: " 
-						<< numUnknowns << std::endl;
-		for( std::set<int>::const_iterator it = bandSet.begin(); 
-			  it != bandSet.end(); 
-			  ++it )
-		{
-			std::cout << "band num: " << *it << std::endl;
-		}
-		std::cout << "band 2 index: " <<  getBandIndex( 2 ) << std::endl;
+		std::cout << "numOfSats: " << numOfSats << " numUnknowns: " 
+						<< numUnknowns << " numAmbUnknowns: " << numAmbUnknowns << std::endl;
 		// debug code ^^^ 
+
+			// Resize csVec and csCov
+		csVec.resize( numAmbUnknowns, 0.0 );
+		csCov.resize( numAmbUnknowns, numAmbUnknowns, 0.0 );
 
 			// Handy copies 
 		size_t rows( numMeas ), columns( numUnknowns );
@@ -430,6 +477,10 @@ namespace gpstk
 
 			// sat index  
 		size_t j(0);
+
+			// accumulativ Num of phase frequency with the consideration of all 
+			// sat system
+		size_t acPhaseFreqNum(0);
 		
 		for( satTypeValueMap::const_iterator itStvm = satTimeDiffData.begin(); 
 			  itStvm != satTimeDiffData.end(); 
@@ -438,8 +489,12 @@ namespace gpstk
 
 				// SatID 
 			SatID sat( itStvm->first );
+			std::cout << sat << std::endl;
 			typeValueMap tvm( itStvm->second );
 
+				// Sat system
+			SatID::SatelliteSystem sys( sat.system );
+			TypeIDSet obsTypes( sysObsTypes(sys) );
 
 			for( TypeIDSet::const_iterator itObsTypes = obsTypes.begin();
 				  itObsTypes != obsTypes.end(); 
@@ -455,7 +510,7 @@ namespace gpstk
 				y(i) = tvm( type );
 	
 					// Zenith weight
-				double observableStd( obsStd.getGNSSObsSTD(SatID::systemGPS, type ) );
+				double observableStd( obsStd.getGNSSObsSTD(sys, type ) );
 				double weight( unitWeightStd/observableStd );
 				weight *= weight;
 	
@@ -478,84 +533,89 @@ namespace gpstk
 
 					// Coefficients for the variation of iono delay and possible
 					// cycle slips, j indicates the sat index
-				RinexObsType rot( type.ConvertToRinexObsType(SatID::systemGPS) );
+				//RinexObsType rot( type.ConvertToRinexObsType(SatID::systemGPS) );
+				RinexObsID roi( type.ConvertToRinexObsID(sys) );
 
 					// 'GetCarrierBand' is defined in the file 'TypeID.hpp'
 					// but not a member function of TypeID class  
-				int band( GetCarrierBand( rot ) );
-				int bandIndex( getBandIndex(band) );
+				int band( GetCarrierBand( roi ) );
+				std::cout << sat << " " << type << " band:" << band << "--->";
+				int bandIndex( getBandIndex(sys, roi.type, band) );
+
+				std::cout <<"bandIndex: " << bandIndex << std::endl;
 					
 					// 'getMiu' function is defined in file 'GNSSconstants' class
-				double miu( getMiu( sat.system, band ) );
-				if( IsCarrierPhase( rot ) )
+				double miu( getMiu( sys, band ) );
+
+					// Fill the efficient
+				if( roi.type == ObsID::otPhase )
 				{
 						// For the variation of iono delay
 					hMatrix( i, numCoorVar+1+j ) = -1 * miu;  
 
 						// For the cycle slips
-					hMatrix( i, numCoorVar+1+(bandIndex+1)*numOfSats+j ) = 
+					//hMatrix( i, numCoorVar+1+(bandIndex+1)*numOfSats+j ) = 
+					hMatrix( i, numCoorVar+1+numOfSats+acPhaseFreqNum+bandIndex ) = 
 						getWavelength( sat, band );
 				}
-				else
+				else if( roi.type == ObsID::otRange )
 				{
 						// This means code observable 
 					hMatrix( i, numCoorVar+1+j ) = miu; 
+				}
+				else
+				{
+					GPSTK_THROW( TypeIDNotFound(getClassName() + " unrecognised type!") );
 				}
 
 					//	Increment for row 
 				i++;
 	
-			}   // End of ' for( typeValueMap::const_iterator itTvm ... '
+			}   // End of 'for( TypeIDSet::const_iterator itObsTypes ... '
+
 
 				// Add virtual measurement of ionospheric delay variation
 			y(i) = 0;
-			double ionoWeight( unitWeightStd/(0.10) );
+			double ionoWeight( unitWeightStd/(0.05) );
 			rMatrix( i, i ) = ionoWeight*ionoWeight;
 
 				// Only one coefficients for this virtual obs  
 			hMatrix( i, numCoorVar+1+j ) = 1.0;
-
 				
 				// Preparation for next sat
 			i++;   // Donot forget!!! 
 			j++;
 
+				// Increment of acPhaseFreqNum
+			acPhaseFreqNum += sysObsTypeBandSet( sys, ObsID::otPhase ).size();
+
 		}   // End of ' for( satTypeValueMap::const_iterator itStvm =  ... '
 
 
 		// debug code vvv
-		std::cout << "hMatrix: " << std::endl;
-		std::cout << hMatrix << std::endl;
-		exit(-1);
+		//std::cout << "hMatrix: " << std::endl;
+		//std::cout << hMatrix << std::endl;
+		//exit(-1);
 		// debug code ^^^
 
 			// Now employ a solver 
 		SolverWMS solver;
 		solver.Compute( y, hMatrix, rMatrix );
 
-			// Store cs estimates 
-		for( i=0; i<2*numOfSats; ++i)
+			// Store cycle slip estimates 
+		for( i=0; i<numAmbUnknowns; ++i)
 		{
 			csVec(i) = solver.solution( numCoorVar + 1 + numOfSats + i ); 
-			for( j=0; j<2*numOfSats; ++j )
+			for( j=0; j<numAmbUnknowns; ++j )
 			{
 				csCov(i, j) = solver.covMatrix( numCoorVar + 1 + numOfSats + i, 
 														  numCoorVar + 1 + numOfSats + j );  
-			} // End of ''
+			} // End of ' for( i=0; i<numAmbUnknowns; ++i) '
 
 		} // End of 'for( i=0; i<2*numOfSats; ++i)'
 
-
-		// debug code vvv
-		std::cout << "solution: " << std::endl;
-		std::cout << solver.solution << std::endl;
-		std::cout << "csVec: " << std::endl;
-		std::cout << csVec << std::endl;
-		// debug code ^^^
-
-
 			// Postfit residuals
-		Matrix<double> postfitResiduals( rows, 1, 0.0 );
+		postfitResiduals.resize( rows, 0.0 );
 		postfitResiduals = hMatrix * solver.solution - y; 
 
 			// *** Now store the postfitResiduals 
@@ -578,34 +638,32 @@ namespace gpstk
 //			index++;
 //
 //		}   // End of ' for( satTypeValueMap::const_iterator itSat ... '
-		
 
-
-		// debug code vvv
-		std::cout << "solution: " << std::endl;
-		std::cout << solver.solution << std::endl;
-		std::cout << "postfitRes: " << std::endl;
-		std::cout << postfitResiduals << std::endl;
-		// debug code ^^^
-			
-			// post unit weight std
-		Matrix<double> vTpv( transpose(postfitResiduals) * 
-								  rMatrix * postfitResiduals );
-
-		double sigma0hat = std::sqrt( vTpv(0,0) / ( rows - numUnknowns ) );
-
-
-		// debug code vvv
-		std::cout << "sigma0: " << unitWeightStd << std::endl;
-		std::cout << "sigma0hat: " << sigma0hat << std::endl;
-		// debug code ^^^
-
-
-			// Compute Qvv
-		Matrix<double> Q( inverse(rMatrix) );
-		Matrix<double> Nbb( transpose( hMatrix ) * rMatrix * hMatrix );
-		Matrix<double> invNbb( inverse(Nbb) );
-		Matrix<double> Qvv( Q - hMatrix * invNbb * transpose( hMatrix ) );
+//		// debug code vvv
+//		std::cout << "solution: " << std::endl;
+//		std::cout << solver.solution << std::endl;
+//		std::cout << "postfitRes: " << std::endl;
+//		std::cout << postfitResiduals << std::endl;
+//		// debug code ^^^
+//			
+//			// post unit weight std
+//		Matrix<double> vTpv( transpose(postfitResiduals) * 
+//								  rMatrix * postfitResiduals );
+//
+//		double sigma0hat = std::sqrt( vTpv(0,0) / ( rows - numUnknowns ) );
+//
+//
+//		// debug code vvv
+//		std::cout << "sigma0: " << unitWeightStd << std::endl;
+//		std::cout << "sigma0hat: " << sigma0hat << std::endl;
+//		// debug code ^^^
+//
+//
+//			// Compute Qvv
+//		Matrix<double> Q( inverse(rMatrix) );
+//		Matrix<double> Nbb( transpose( hMatrix ) * rMatrix * hMatrix );
+//		Matrix<double> invNbb( inverse(Nbb) );
+//		Matrix<double> Qvv( Q - hMatrix * invNbb * transpose( hMatrix ) );
 		// debug code vvv
 //		std::cout << "Qvv: " << std::endl;
 //		std::cout << Qvv << std::endl;
@@ -638,48 +696,152 @@ namespace gpstk
 
 	}   // End of ' void CycleSlipEstimator::modelTimeDifferencedCode( ...'
 
+
+		/* Return post residual regarding to a specific sat and a specific 
+		 * type. These types should be corresponding to the data member
+		 * obsTypes.
+		 *
+		 * @param sat
+		 * @param type
+		 * 
+		 */
+	double CycleSlipEstimator::getPostfitResidual( SatID sat, TypeID type )
+	{
+			// postfit residual value
+		double postRes(0.0);
+
+			// Convert postfitType(usr) to prefitType(engineer)
+		TypeID prefitType = type.ConvertToPrefitTypeID();
+
+		// debug vvv
+//std::cout << "postType: " << type << " -> preType: " << prefitType << std::endl; 
+		// debug ^^^ 
+
+			// Find the index of sat in data member 'validSatIDSet' 
+		SatIDSet::const_iterator itSatID = validSatSet.begin();
+		size_t satIndex(0);
+		while( *itSatID != sat )
+		{ ++satIndex; ++itSatID;}
+//		std::cout << sat << "is indexed by: " << satIndex << std::endl;
+
+			// Find the index of converted type in data member 'obsTypes'
+		size_t typeIndex(0);
+		if( type != TypeID::postfitDeltaIono )
+		{
+			//TypeIDSet::const_iterator itObsTypes = obsTypes.begin();
+			TypeIDSet::const_iterator itObsTypes = sysObsTypes(sat.system).begin();
+			while( *itObsTypes != prefitType )
+			{ ++typeIndex; ++itObsTypes;}
+		}
+		else{
+			typeIndex = sysObsTypes[sat.system].size();
+		} // End of ' if( type != TypeID::postfitDeltaIono ) '
+
+			// Compute the index of this pre-type in postfitResiduals
+		size_t row( satIndex*(sysObsTypes[sat.system].size() + 1) + typeIndex );
+//		std::cout << row << " is the number in postfitresiduals" << std::endl;
+
+		postRes = postfitResiduals(row);
+
+		return postRes;
+	}  // End of 'double getPostfitResidual( SatID sat, TypeID type )'
+
+ 
+
 		/// Return a  given a band in obsTypes
-	void CycleSlipEstimator::getBandList()
+	void CycleSlipEstimator::getBandList( SatID::SatelliteSystem sys )
 	{
 	
-			// Form a Band list from a obsTypes 
+			// Form a Band list from obsTypes of given system  
 		int currentBand(-1);
 
-		for( TypeIDSet::const_iterator itType = obsTypes.begin();
-			  itType != obsTypes.end();
-			  ++itType )
+			// Get the obsTypes of this sys 
+		TypeIDSet types;
+		SysTypeIDSetMap::const_iterator it = sysObsTypes.find( sys );
+		if( it != sysObsTypes.end() )
 		{
-			TypeID type( *itType );
-			RinexObsType rot( type.ConvertToRinexObsType(sys) );
+			types = it -> second; 
+				
+				// Get the band list, stored in 'sysBandSet'
+			for( TypeIDSet::const_iterator itType = types.begin();
+				  itType != types.end();
+				  ++itType )
+			{
+				TypeID type( *itType );
+				//RinexObsType rot( type.ConvertToRinexObsType(sys) );
+				RinexObsID roi( type.ConvertToRinexObsID(sys) );
+	
+					// Get the band
+				currentBand = GetCarrierBand( roi );
 
-				// Get the band
-			currentBand = GetCarrierBand( rot );
-
-			if( currentBand == -1 ) return;
-
-			std::set<int>::iterator it = bandSet.find( currentBand ); 
-
-			if( it == bandSet.end() ) bandSet.insert( currentBand );
+				if( currentBand == -1 )
+				{
+					Exception e("CycleSlipEstimator: unrecognised band");
+					GPSTK_THROW( e );
+				}
+				
+					// Insert this band into the set 
+			 	sysObsTypeBandSet[ sys ][ roi.type ].insert( currentBand );
 			
+			} // End of 'for( TypeIDSet::const_iterator itType = types.begin();...' 
+
 		}
-		
+		else
+		{
+			Exception e("CycleSlipEstimator: no obstypes for some sys");
+			GPSTK_THROW(e);
+		}
+
 	}   // End of ' void getBandList( int band ) '
 
 
-	int CycleSlipEstimator::getBandIndex( int band )
+
+	int CycleSlipEstimator::getBandIndex( SatID::SatelliteSystem sys, 
+													  ObsID::ObservationType ot,
+													  int band )
 	{
 		int index(0);
 		
+		std::set<int> bandSet( sysObsTypeBandSet( sys, ot) );
 		std::set<int>::const_iterator it = bandSet.begin(); 
 		while( (*it) != band )
 		{
 			++it;
 			++index;
 		}
-
+				
 		return index;
 
 	}   // End of ' '
 
+	std::set<int>& CycleSlipEstimator::SysObsTypeSet::operator()( const SatID::SatelliteSystem sys, 
+															const ObsID::ObservationType ot )
+		throw( ValueNotFound )
+	{
+			// Find the bandSet related to the given sys and given ot  
+		SysObsTypeSet::iterator itSTB = (*this).find( sys );
+		if( itSTB != (*this).end() )
+		{
+			std::map<ObsID::ObservationType, std::set<int> >::iterator itTB = 
+														 (itSTB -> second).find( ot );
+			if( itTB != (itSTB -> second).end() )
+			{
+				return itTB -> second;
+				
+			} // End of 'if( itTB != (itSTB -> second).end() )'
+			else
+			{
+				ValueNotFound e("CycleSlipEstimator: obsType doesn't exist");
+				GPSTK_THROW(e);
+			}
+
+		}
+		else
+		{
+			ValueNotFound e("CycleSlipEstimator: sat system doesn't exist");
+			GPSTK_THROW(e);
+		}  // End of ' if( itSTB != sysObsTypeBandSet.end() ) '
+
+	} // End of ' set<int>& SysObsTypeSet::operator() ... '
 
 }   // End of namespace

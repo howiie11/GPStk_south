@@ -61,6 +61,7 @@
 #include "Matrix.hpp"
 #include "CivilTime.hpp"
 #include "YDSTime.hpp"
+#include "MGEXObsTypeID.hpp"
 #include "GNSSconstants.hpp"
 
 
@@ -196,6 +197,17 @@ namespace gpstk
 
 		/// Set containing SatID::SatelliteSystem objects
 	typedef std::set< SatID::SatelliteSystem > SatSystemSet;
+
+		/// Sat System <---> obsTypes
+//	typedef std::map< SatID::SatelliteSystem, TypeIDSet > SysTypeIDSetMap;
+	struct SysTypeIDSetMap : std::map< SatID::SatelliteSystem, TypeIDSet >
+	{
+		TypeIDSet& operator()( const SatID::SatelliteSystem sys );
+		virtual ~SysTypeIDSetMap() {};
+
+
+	}; // End of 'struct SysTypeIDSetMap : std::map<  ... '
+
 
 
       /// Map holding TypeID with corresponding numeric value.
@@ -462,6 +474,11 @@ namespace gpstk
       satTypeValueMap extractSatID(const SatIDSet& satSet) const;
 
 
+         /// Returns a satTypeValueMap with only the specified system.
+         /// @param sys 
+      satTypeValueMap extractSatSystem(const SatID::SatelliteSystem& sys) const;
+
+
          /// Modifies this object, keeping only this satellite.
          /// @param satellite Satellite to be kept.
       satTypeValueMap& keepOnlySatID(const SatID& satellite);
@@ -488,6 +505,15 @@ namespace gpstk
          /// @param typeSet Set (TypeIDSet) containing the types of data
          ///                to be extracted.
       satTypeValueMap extractTypeID(const TypeIDSet& typeSet) const;
+
+			/// Returns a satTypeValueMap with only these types of data regarding
+			/// the given satellite system.
+			/// @param sysTypeData
+         /// @param typeSet Set (TypeIDSet) containing the types of data
+         ///                to be extracted.
+      satTypeValueMap extractTypeID( const SysTypeIDSetMap& sysTypeData ) const;
+
+
 
 
          /// Modifies this object, keeping only this type of data.
@@ -1742,6 +1768,9 @@ namespace gpstk
 		/// Count freq num from a given TypeIDSet
 	size_t CountFreqNum( const SatID::SatelliteSystem sys,
 								const TypeIDSet& tidSet );
+
+		/// Sat system<--->typeValueMap
+	typedef std::map< SatID::SatelliteSystem, typeValueMap> SysTypeValueMap;
 
 
       //@}
