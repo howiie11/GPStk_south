@@ -38,8 +38,13 @@ namespace gpstk
 	std::string GNSSObsSTDTables::getClassName(void) const
 	{ return "GNSSObsSTDTables"; }
 
+		// Initialize the 'systemObsPrecisionMap'
+	satTypeValueMap GNSSObsSTDTables::systemObsPrecisionMap;
+
+	GNSSObsSTDTables::Initializer tableSingleton;
+
 		/// Default constructor
-	GNSSObsSTDTables::GNSSObsSTDTables()
+	GNSSObsSTDTables::Initializer::Initializer()
 	{
 		SatID gpsSat(-1, SatID::systemGPS );
 		SatID galileoSat(-1, SatID::systemGalileo );
@@ -55,14 +60,14 @@ namespace gpstk
 		systemObsPrecisionMap[ gpsSat ][ TypeID::prefitPC ] = 1;  
 
 			// Galileo 
-		systemObsPrecisionMap[ galileoSat ][ TypeID::C1 ] = 0.2; // unit meter 
-		systemObsPrecisionMap[ galileoSat ][ TypeID::C5 ] = 0.15;  
-		systemObsPrecisionMap[ galileoSat ][ TypeID::C7 ] = 0.15;  
-		systemObsPrecisionMap[ galileoSat ][ TypeID::L1 ] = 0.001;  
-		systemObsPrecisionMap[ galileoSat ][ TypeID::L5 ] = 0.0013;  
-		systemObsPrecisionMap[ galileoSat ][ TypeID::L7 ] = 0.0013;  
+		systemObsPrecisionMap[ galileoSat ][ TypeID::prefitC1 ] = 0.2; // unit meter 
+		systemObsPrecisionMap[ galileoSat ][ TypeID::prefitC5 ] = 0.15;  
+		systemObsPrecisionMap[ galileoSat ][ TypeID::prefitC7 ] = 0.15;  
+		systemObsPrecisionMap[ galileoSat ][ TypeID::prefitL1 ] = 0.001;  
+		systemObsPrecisionMap[ galileoSat ][ TypeID::prefitL5 ] = 0.0013;  
+		systemObsPrecisionMap[ galileoSat ][ TypeID::prefitL7 ] = 0.0013;  
 		
-	}   // End of constructor
+	}
 
 
 		// Return precision info for refered sys and type
@@ -73,7 +78,17 @@ namespace gpstk
 			// Dummy sat for index 
 		SatID dummySat( -1, sys );
 
-		return systemObsPrecisionMap.getValue( dummySat, type ); 
+		double value(0.0);
+		try
+		{
+			value = systemObsPrecisionMap.getValue( dummySat, type );
+		}
+		catch( Exception& u )
+		{
+			Exception e( getClassName() + ":" + u.what() );
+			GPSTK_THROW(e);
+		}
+		return value; 
 
 	}   // End of ' double GNSSObsSTDTables::getGNSSObsSTD() '
 

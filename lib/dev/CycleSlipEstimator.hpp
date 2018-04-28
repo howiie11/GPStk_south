@@ -89,7 +89,8 @@ namespace gpstk
 			CycleSlipEstimator( const SatID::SatelliteSystem& usrSys,
 									  const TypeIDSet& usrObsTypes )
 										 : staticReceiver(true), deltaTMax(61.0),
-											SR(0.0), useTimeDifferencedLI(false) 
+											SR(0.0), useTimeDifferencedLI(false),
+											dLI(0), dLIStd(0.1), maxBufferSize(12)
 			{
 					// Insert this sys<---> obsTypes pair 	
 				sysObsTypes[usrSys] = usrObsTypes;
@@ -158,13 +159,15 @@ namespace gpstk
 		}
 
 
-			///  Get LI time-diff data
-		virtual satTypeValueMap& getSatLITimeDiffData()
-		{ return satLITimeDiffData; }
+			/// Get LI time-diff data for a given sat and given LI type
+			/// Note: the type parameter should be the time-differenced form   
+		virtual double& getSatLITimeDiffData( const SatID& sat,
+														  const TypeID& type )
+		{ return satLITimeDiffData(sat)(type); }
 
 
 			/// Set using info of time-differenced LI 
-		virtual CycleSlipEstimator& setUsingTimeDiffLI( bool use )
+		virtual CycleSlipEstimator& useTimeDiffLI( bool use )
 		{ useTimeDifferencedLI = use; return (*this); };
 
 			/** Set LI  types  
@@ -173,13 +176,24 @@ namespace gpstk
 			 * @param ots			obs types of sys
 			 */
 			/// 
-		virtual CycleSlipEstimator& setLITypes( TypeIDSet& usrLITypes )
-		{ liTypes = usrLITypes; return (*this); }
+		virtual CycleSlipEstimator& setLITypes( const SatID::SatelliteSystem& sys, 
+															 const TypeIDSet& usrLITypes )
+		{ sysLITypes.clear(); sysLITypes[sys] = usrLITypes; return (*this); }
+
+			/// Add a pair of sys <---> TypeIDSet
+		virtual CycleSlipEstimator& addLITypes( const SatID::SatelliteSystem& sys, 
+															 const TypeIDSet& usrLITypes )
+		{ sysLITypes[sys] = usrLITypes; return (*this); }
 
 
 			/// Set receiver state
 		virtual CycleSlipEstimator& setReceiverStatic( bool staticRec )
 		{ staticReceiver = staticRec; return (*this); }
+
+			/// Set deltaLI value and std
+		virtual CycleSlipEstimator& setDeltaLIState( const double& deltaLI, 
+																	const double& deltaLIStd )
+		{ dLI = deltaLI; dLIStd = deltaLIStd; return (*this); }
 
 
 			/// Returns a string identifying this object.
@@ -204,6 +218,21 @@ namespace gpstk
 			/// Get Success rate
 		virtual double getSuccessRate()
 		{ return SR; }
+
+			/// Set max window size of satTimeLIDeque 
+		virtual CycleSlipEstimator& setMaxBufferSize(const int& maxBufSize);
+
+			/* Return average deltaLI and its variance from 'satTimeLIDeque' given
+			 * a sat
+			 *
+			 * @param sat		I 
+			 * @param adLI  O  average of deltaLI 
+			 * @param var		O  variance of average of deltaLI 
+			 *
+			 */
+		virtual void getSmoothDeltaLI( const SatID& sat, const TypeID& ty, 
+												 double& adLI, double& var );
+		
 
 			/* Return post residual regarding to a specific sat and a specific 
 			 * type. These types should be corresponding to the data member
@@ -257,7 +286,8 @@ namespace gpstk
 			SysTypeValueMap sysNumFreq;
 
 				/// LI types 
-			TypeIDSet liTypes;
+			//TypeIDSet liTypes;
+			SysTypeIDSetMap sysLITypes;
 
 				/// Receiver state
 			bool staticReceiver;
@@ -268,8 +298,74 @@ namespace gpstk
 				/// SuccessRate 
 			double SR;
 
+				/// deltaLI and its std
+			double dLI, dLIStd;
+
 				/// Use external ionosperic delay info 
 			bool useTimeDifferencedLI;
+
+				// Define a window to compute LI average
+//				// This is a bad structure for inconvenient 'delete' operation
+//			struct SatTimeLIDeque  std::map< SatID, std::map< CommonTime, double > > 
+//		{
+//			SatTimeLIDeque(): windowSize(10) {};
+//
+//				/// Set window size 
+//			SatTimeLIDeque& setWindowSize( size_t size )
+//			{ windowSize = size; return *this; }
+//
+//				/// Compute weight of every LI regarding to a 
+//
+//				/// Return a defined map with given sat
+//			std::map< CommonTime, double >& operator()( const SatID& sat )
+//					throw( ValueNotFound ); 
+//			
+//
+//				/// Return the deltaLI value given a sat and time
+//			double& operator()( const SatID& sat, 
+//									  const CommonTime& time )
+//					throw( ValueNotFound ); 
+//			
+//
+//				/// Destructor 
+//			virtual ~SatTimeLIDeque() {};
+//
+//				/// window size
+//			size_t windowSize;
+//		};
+		
+//		SatTimeLIDeque satTimeLIDeque;
+
+		int maxBufferSize;
+
+		static const int minBufferSize;
+
+			// A better version of satTimeLIDeque
+		struct TypeValueDeque : std::map< TypeID, std::deque<double> > 
+		{
+			std::deque<double>& operator()( const TypeID& ty )
+					throw( TypeIDNotFound ); 
+
+				// Destructor
+			virtual ~TypeValueDeque() {};
+
+			std::deque<double> eleWeightBuffer;
+			std::deque<CommonTime> epochBuffer;
+
+		};
+
+		struct SatTypeValueDeque : std::map< SatID, TypeValueDeque >
+		{
+			
+			TypeValueDeque& operator()( const SatID& sat ) 
+					throw( SatIDNotFound ); 
+
+				// Destructor
+			 virtual ~SatTypeValueDeque() {};	
+		};
+
+		SatTypeValueDeque satLIDataDeque;
+			
 
 //				/// postfit residuals 
 //			satTypeValueMap satPostfitRes;
@@ -283,6 +379,9 @@ namespace gpstk
 
 				/// Sat time-differenced ionospheric delay data 
 			satTypeValueMap satLITimeDiffData;
+
+				/// Std tables 
+			static GNSSObsSTDTables obsStd;
 
 
 			/* Get filter data

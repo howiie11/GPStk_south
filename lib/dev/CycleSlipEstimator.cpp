@@ -47,7 +47,12 @@ namespace gpstk
 	{ return "CycleSlipEstimator"; }
 
 
+		// Static member: 
+	GNSSObsSTDTables CycleSlipEstimator::obsStd;
 
+
+      // Minimum buffer size . It is always set to 5
+   const int CycleSlipEstimator::minBufferSize = 5;
 
       /* Returns a gnnsRinex object, adding the new data generated when
        * calling this object.
@@ -115,7 +120,6 @@ namespace gpstk
  			for( it = gData.begin(); it != gData.end(); ++it )
  			{
  				
- 				
  					// SatID 
  				SatID sat( it -> first );
 				typeValueMap tvm( it -> second );
@@ -150,6 +154,32 @@ namespace gpstk
 					continue;
 
 				}   // End of 'try-catch' block
+				
+					// We also need to check the LI types	
+				if( useTimeDifferencedLI )
+				{
+					try
+					{
+						TypeIDSet typeSet = sysLITypes( sat.system );
+						for( TypeIDSet::iterator it = typeSet.begin(); 
+							  it != typeSet.end(); 
+							  ++it )
+						{
+							TypeID type( *it );
+	
+							testValue = tvm( type );		
+					
+						} // End of ' for( TypeIDSet::iterator it = typeSet.begin(); '
+					}
+					catch( TypeIDNotFound& e )
+					{
+							// If some value is missing, then schedule this satellite
+							// for removal
+						satRejectedSet.insert( sat );
+						continue;
+					}
+
+				} // End of ' if( useTimeDifferencedLI ) '
 
 				//  debug code vvv
 				std::cout << sat <<  std::endl;
@@ -275,6 +305,12 @@ namespace gpstk
 				// Updata satFormerData 
 			satFormerData[sat] = etvb;
 
+			if( useTimeDifferencedLI )
+			{
+					// Clear data of this sat
+				satLIDataDeque.erase(sat);
+			}
+
 				// Just return
 			return reportTimeInteruption;
 
@@ -302,42 +338,151 @@ namespace gpstk
 
 			// Insert weight info into satTimeDiffData with
 			// the consideration of elevation 
-		double wNow( tvMap(TypeID::weight) );
-		double wPrevious( satFormerData(sat)(TypeID::weight) );
-		satTimeDiffData[sat][TypeID::weight] = wNow*wNow*wPrevious*wPrevious/( wNow*wNow + wPrevious*wPrevious); 
+		try
+		{
+			double wNow( tvMap(TypeID::weight) );
+			double wPrevious( satFormerData(sat)(TypeID::weight) );
+				
+				// Compute weight factor 
+			satTimeDiffData[sat][TypeID::weight] = wNow*wNow*wPrevious*wPrevious/( wNow*wNow + wPrevious*wPrevious); 
 
-//			// Loop through the liTypes to compute time-differenced values
+				// Store elevation weight factor in 'satTimeLIDeque'  
+			if( useTimeDifferencedLI )
+			{
+					// Insert present weight into satLIDataDeque
+				satLIDataDeque[sat].eleWeightBuffer.push_back( wNow );
+				satLIDataDeque[sat].epochBuffer.push_back( epoch );
+
+					// Keep its size no more than 'maxBufferSize'
+				if( satLIDataDeque(sat).eleWeightBuffer.size() > maxBufferSize )
+				{
+					satLIDataDeque(sat).eleWeightBuffer.pop_front();
+					satLIDataDeque(sat).epochBuffer.pop_front();
+				} // End of ' if( satLIDataDeque(sat).eleWeightBuffer.size() ... '
+
+					// Loop through the liTypes to compute time-differenced values
+				TypeIDSet liTypes( sysLITypes(sat.system) );
+				for( TypeIDSet::const_iterator it = liTypes.begin(); 
+					  it != liTypes.end(); 
+					  ++it )
+				{
+					TypeID type( *it );
+	
+						// Result type
+					TypeID type1d(type.ConvertToTimeDiffType(1));
+					TypeID type2d(type.ConvertToTimeDiffType(2));
+	
+						// Time differenced value of this type 
+					double deltaLI(0.0);
+	
+					deltaLI = tvMap(type) - satFormerData(sat)(type);
+	
+					std::cout << "deltaLI: " << deltaLI << std::endl;
+					//satLITimeDiffData[sat][TypeID::deltaLI] = deltaLI;
+	
+						// Store present deltaLI in satLITimeDiffData for output later 
+					satLITimeDiffData[sat][type1d] = deltaLI;
+	
+						// Store present deltaLI in the deque 
+					satLIDataDeque[sat][type1d].push_back( deltaLI );
+	
+						// Keep its size less than maxBufferSize
+					try
+					{
+						size_t s( satLIDataDeque(sat)(type1d).size() );	
+						if( s > maxBufferSize )
+						{
+								// Too many data, delete the 1st one
+							satLIDataDeque(sat)(type1d).pop_front();
+						}
+	
+					}
+					catch( ValueNotFound& e )
+					{
+						GPSTK_THROW( e );
+					}
+	
+						// Record deltaLI in etvb, for later update of satFormerData 
+					etvb[type1d] = deltaLI;
+	
+						// Double time-differenced LI 
+					double deltaDeltaLI(0.0);
+					epochTypeValueBody::const_iterator iter = 
+													satFormerData(sat).find( type1d );	
+					if( iter != satFormerData(sat).end() )
+					{
+						deltaDeltaLI = deltaLI - satFormerData(sat)(type1d);
+						satLITimeDiffData[sat][ type2d ] = deltaDeltaLI;
+						std::cout << "deltaDeltaLI: " << deltaDeltaLI << std::endl;
+					}
+					
+				}   // End of ' for( TypeIDSet::const_iterator it =  ... '
+
+
+		
+			} // End of ' if( useTimeDifferencedLI ) '
+		}
+		catch( ... )
+		{
+			Exception e( "SatID or TypeID::weight cannot be found!!!" );
+			GPSTK_THROW( e );
+		}
+			// Loop through the liTypes to compute time-differenced values
 //		if( useTimeDifferencedLI )
 //		{
+//			TypeIDSet liTypes( sysLITypes(sat.system) );
 //			for( TypeIDSet::const_iterator it = liTypes.begin(); 
 //				  it != liTypes.end(); 
 //				  ++it )
 //			{
-//				TypeID type( *it ), outType( *it );
+//				TypeID type( *it );
 //
-//				if( type == TypeID::LI )
-//				{
-//					outType = TypeID::deltaLI;
-//				}
+//					// Result type
+//				TypeID type1d(type.ConvertToTimeDiffType(1));
+//				TypeID type2d(type.ConvertToTimeDiffType(2));
 //
 //					// Time differenced value of this type 
 //				double deltaLI(0.0);
+//
 //				deltaLI = tvMap(type) - satFormerData(sat)(type);
 //
-//				satLITimeDiffData[sat][outType] = deltaLI;
+//				std::cout << "deltaLI: " << deltaLI << std::endl;
+//				//satLITimeDiffData[sat][TypeID::deltaLI] = deltaLI;
 //
+//					// Store present deltaLI in satLITimeDiffData for output later 
+//				satLITimeDiffData[sat][type1d] = deltaLI;
 //
-//					// Record deltaLI in etvb
-//				etvb[outType] = deltaLI;
+//					// Store present deltaLI in the deque 
+//				satLIDataDeque[sat][type1d].dataBuffer.push_back( deltaLI );
+//
+//					// Keep its size less than maxBufferSize
+//				try
+//				{
+//					size_t s( satLIDataDeque(sat)(type1d).dataBuffer.size() );	
+//					if( s > maxBufferSize )
+//					{
+//							// Too many data, delete the 1st one
+//						satTimeLIDeque(sat)(type1d).dataBuffer.pop_front();
+//					}
+//
+//				}
+//				catch( ValueNotFound& e )
+//				{
+//					GPSTK_THROW( e );
+//				}
+//
+//					// Record deltaLI in etvb, for later update of satFormerData 
+//				etvb[type1d] = deltaLI;
 //
 //					// Double time-differenced LI 
 //				double deltaDeltaLI(0.0);
 //				epochTypeValueBody::const_iterator iter = 
-//												satFormerData(sat).find( TypeID::deltaLI );	
+//												satFormerData(sat).find( type1d );	
 //				if( iter != satFormerData(sat).end() )
 //				{
-//					deltaDeltaLI = deltaLI - satFormerData(sat)(outType);
-//					satLITimeDiffData[sat][ TypeID::deltaDeltaLI ] = deltaDeltaLI;
+//					deltaDeltaLI = deltaLI - satFormerData(sat)(type1d);
+//					satLITimeDiffData[sat][ type2d ] = deltaDeltaLI;
+//					std::cout << "deltaDeltaLI: " << deltaDeltaLI << std::endl;
 //				}
 //				
 //			}   // End of ' for( TypeIDSet::const_iterator it =  ... '
@@ -463,7 +608,7 @@ namespace gpstk
 
 		
 			// Unit weight std  
-		GNSSObsSTDTables obsStd;
+//		GNSSObsSTDTables obsStd;
 		double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, 
 																  TypeID::prefitPC ) );
 //		unitWeightStd = 0.2;
@@ -575,9 +720,21 @@ namespace gpstk
 
 
 				// Add virtual measurement of ionospheric delay variation
-			y(i) = 0;
-			double ionoWeight( unitWeightStd/(0.05) );
-			rMatrix( i, i ) = ionoWeight*ionoWeight;
+			if( useTimeDifferencedLI )
+			{
+				double ion(0.0), ionVar(1.0);
+				getSmoothDeltaLI( sat, TypeID::dLI, ion, ionVar );
+				rMatrix( i, i ) = unitWeightStd*unitWeightStd/ionVar;
+
+				std::cout << sat << " ion std: " << std::sqrt( ionVar ) << std::endl;
+			}
+			else
+			{
+					// Empirical value
+				y(i) = 0;
+				double ionoWeight( unitWeightStd/(0.05) );
+				rMatrix( i, i ) = ionoWeight*ionoWeight;
+			}
 
 				// Only one coefficients for this virtual obs  
 			hMatrix( i, numCoorVar+1+j ) = 1.0;
@@ -814,8 +971,121 @@ namespace gpstk
 
 	}   // End of ' '
 
+
+	   /* Method to set the maximum buffer size for data, in samples.
+       *
+       * @param maxBufSize      Maximum buffer size for data, in samples.
+       *
+       * \warning You must not set a value under minBufferSize, which
+       * usually is 5.
+       */
+   CycleSlipEstimator& CycleSlipEstimator::setMaxBufferSize(const int& maxBufSize)
+   {
+         // Don't allow buffer sizes less than minBufferSize
+      if (maxBufSize >= minBufferSize)
+      {
+         maxBufferSize = maxBufSize;
+      }
+      else
+      {
+         maxBufferSize = minBufferSize;
+      }
+
+      return (*this);
+
+   }  // End of method 'LICSDetector2::setMaxBufferSize()'
+
+		/// CycleSlipEstimator::SatTypeValueDeque::operator()
+	CycleSlipEstimator::TypeValueDeque& CycleSlipEstimator::SatTypeValueDeque::operator()( const SatID& sat )
+		throw( SatIDNotFound )
+	{
+		SatTypeValueDeque::iterator itSatLIData = (*this).find( sat );	
+
+		if( itSatLIData != (*this).end() )
+		{
+			return itSatLIData -> second;
+		}
+		else
+		{
+			SatIDNotFound e(StringUtils::asString(sat) + "not found!");
+			GPSTK_THROW(e);
+		}  // End of ' if( itLIData != (*this).end() ) '
+
+	} // End of ' CycleSlipEstimator::TypeValueDeque& ... '
+
+		/// CycleSlipEstimator::TypeValueDeque::operator
+	std::deque<double>& CycleSlipEstimator::TypeValueDeque::operator()( const TypeID& ty )
+		throw( TypeIDNotFound )
+	{
+
+	   TypeValueDeque::iterator itLIData = (*this).find( ty );
+
+		if( itLIData != (*this).end() )
+		{
+			return itLIData -> second;
+		}
+		else
+		{
+			TypeIDNotFound e(StringUtils::asString(ty) + "not found!");	
+			GPSTK_THROW(e);
+		}  // End of ' if( itLIData != (itSatLIData).second.end() ) '
+
+	} // End of ' TimeLIDeque& CycleSlipEstimator::SatTimeLIDeque ... '
+
+
+//		/// CycleSlipEstimator::SatTimeLIDeque::operator()
+//	std::map< CommonTime, double >& CycleSlipEstimator::SatTimeLIDeque::operator()( const SatID& sat )
+//		throw( ValueNotFound )
+//	{
+//		SatTimeLIDeque::iterator itLIData = (*this).find( sat );	
+//
+//		if( itLIData != (*this).end() )
+//		{
+//			return itLIData -> second;
+//		}
+//		else
+//		{
+//			ValueNotFound e("CycleSlipEstimator: sat system doesn't exist");
+//			GPSTK_THROW(e);
+//		}  // End of ' if( itLIData != (*this).end() ) '
+//
+//	} // End of ' std::map< CommonTime, double >& operator()( const SatID& sat ) '
+//
+//
+//
+//		/// CycleSlipEstimator::SatTimeLIDeque::operator()
+//	double& CycleSlipEstimator::SatTimeLIDeque::operator()( const SatID& sat, 
+//																			  const CommonTime& time )
+//		throw( ValueNotFound )
+//	{
+//		
+//		SatTimeLIDeque::iterator itLIData = (*this).find( sat );
+//		if( itLIData != (*this).end() )
+//		{
+//			std::map< CommonTime, double >::iterator itTimeLIData = (itLIData -> second).find( time );		
+//			if( itTimeLIData != (itLIData -> second).end() )
+//			{
+//				return itTimeLIData -> second;
+//			}
+//			else
+//			{
+//				ValueNotFound e("CycleSlipEstimator: time tag doesn't exist");
+//				GPSTK_THROW(e);
+//			}
+//
+//		}
+//		else
+//		{
+//			ValueNotFound e("CycleSlipEstimator: sat system doesn't exist");
+//			GPSTK_THROW(e);
+//		}  // End of ' if( itLIData != (*this).end() ) '
+//
+//	} // End of ' double& CycleSlipEstimator::SatTimeLIDeque::operator() '
+
+
+		/// CycleSlipEstimator::SysObsTypeSet::operator()
 	std::set<int>& CycleSlipEstimator::SysObsTypeSet::operator()( const SatID::SatelliteSystem sys, 
-															const ObsID::ObservationType ot )
+																					  const ObsID::ObservationType ot )
 		throw( ValueNotFound )
 	{
 			// Find the bandSet related to the given sys and given ot  
@@ -843,5 +1113,78 @@ namespace gpstk
 		}  // End of ' if( itSTB != sysObsTypeBandSet.end() ) '
 
 	} // End of ' set<int>& SysObsTypeSet::operator() ... '
+
+		/* Return average deltaLI and its variance from 'satTimeLIDeque' given
+		 * a sat
+		 *
+		 * @param sat		I 
+		 * @param adLI		I/O  average of deltaLI 
+		 * @param var		I/O  variance of average of deltaLI 
+		 *
+		 */
+	void CycleSlipEstimator::getSmoothDeltaLI( const SatID& sat, const TypeID& ty, 
+			   											 double& adLI, double& var )
+	{
+		TypeValueDeque tempData;
+		try
+		{
+			tempData = satLIDataDeque( sat );
+			std::deque<CommonTime> epochs( tempData.epochBuffer );
+			std::deque<double> weights( tempData.eleWeightBuffer );
+			std::deque<double> data( tempData(ty) );
+
+				// Get its size
+			size_t s( epochs.size() );
+			if( s == 0 )
+			{ Exception e("no data in buffer!!!"); GPSTK_THROW(e); };
+
+			if( s != data.size() || s != weights.size() )
+			{ Exception e("unmatched size!!!"); GPSTK_THROW(e); };
+
+				// Simply Compute the average of data by the object of Stats
+			Stats<double> stat; 
+			for( std::deque<double>::const_iterator itd = data.begin(); 
+				  itd != data.end(); 
+				  ++itd )
+			{
+				stat.Add( *itd );
+			} // End of ' for( std::deque<double>::const_iterator ... '
+
+			adLI = stat.Average();
+
+				// Std of deltaLI in zenith direction
+			double lStd( obsStd.getGNSSObsSTD( sat.system, TypeID::prefitL1 ) );
+			double dLIVar( 4*lStd*lStd );
+
+			var = dLIVar/(s*s);
+				// Compute the variance of the weighted average  
+			double sum(0.0);
+			for( size_t i=0; i<s; i++ )
+			{
+				double c( 1.0/weights[i] );	
+				sum += c*c;
+			} // End of 'for( size_t i=0; i<s; i++ )'
+
+			if( sum != 0 )
+			{	
+				var = var*sum;
+			}
+			else
+			{
+				Exception e("Error in Computing weight");
+			} // End of 'if( sum != 0 )'
+
+		}
+		catch( ... )
+		{
+			Exception e( StringUtils::asString(sat) + "not found or any other problem" );
+			GPSTK_THROW(e);
+		}
+
+
+	} 
+		
+
+
 
 }   // End of namespace

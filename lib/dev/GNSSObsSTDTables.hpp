@@ -56,11 +56,12 @@ namespace gpstk
 		public:
 
 			/// Default constructor 
-		GNSSObsSTDTables();
+		GNSSObsSTDTables(){};
 
 			/// Return precision info for refered sys and type 
 		virtual double getGNSSObsSTD( SatID::SatelliteSystem sys, 
 												TypeID type );
+
 
 			/// Returns a string identifying this object.
 		virtual std::string getClassName(void) const; 
@@ -68,14 +69,21 @@ namespace gpstk
 			/// Destructor
 		virtual ~GNSSObsSTDTables() {}; 
 
-		private:
-
 			/// BIG Map holding the precision info for muti-gnss system
-		satTypeValueMap systemObsPrecisionMap;
+		static satTypeValueMap systemObsPrecisionMap;
+
+	public:
+			/// Class to initialize the 'systemObsPrecisionMap'
+		class Initializer
+		{
+		public:
+			Initializer();
+		};
+
+		static Initializer tableSingleton;
 
 			/// Dummy sat 
 		//gpstk::SatID dummySat;
-
 
 	
 
