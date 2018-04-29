@@ -243,6 +243,9 @@ namespace gpstk
 			 * 
 			 */
 		virtual double getPostfitResidual( SatID sat, TypeID type );
+			
+			/// Return 'satPostfitResiduals'
+//		virtual satTypeValueMap satPostfitResiduals; 
 
 			/// Destructor
 		virtual ~CycleSlipEstimator() {};
@@ -288,6 +291,15 @@ namespace gpstk
 				/// LI types 
 			//TypeIDSet liTypes;
 			SysTypeIDSetMap sysLITypes;
+
+				/// sat index recorder in the defined time-differenced model 
+			std::map< int, SatID > rowSat;
+			std::map< int, SatID > ambColSat;
+			std::map< int, SatID > ionColSat;
+
+				/// Handy clear function 
+			void clearSatIndexRecorder()
+			{ rowSat.clear(); ambColSat.clear(); ionColSat.clear(); };
 
 				/// Receiver state
 			bool staticReceiver;
@@ -370,6 +382,7 @@ namespace gpstk
 //				/// postfit residuals 
 //			satTypeValueMap satPostfitRes;
 			Vector<double> postfitResiduals;
+			satTypeValueMap satPostfitResiduals;
 
 				/// Struct to store sat data of former epoch
 			satEpochTypeValueMap satFormerData;

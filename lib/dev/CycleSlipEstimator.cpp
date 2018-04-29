@@ -115,6 +115,14 @@ namespace gpstk
 				// at the beginning of each processing epoch 
 			satLITimeDiffData.clear();
 
+				// Clear sat postfit residual data
+				// at the beginning of each processing epoch 
+			satPostfitResiduals.clear();
+
+				// Clear sat Index recorder
+			clearSatIndexRecorder();
+				
+
  				// Loop through all the satellites
  			satTypeValueMap::iterator it;
  			for( it = gData.begin(); it != gData.end(); ++it )
@@ -189,6 +197,29 @@ namespace gpstk
 				bool timeInteruption(false);
  				timeInteruption = getSatFilterData( epoch, sat, tvm, 
 																epochflag, satTimeDiffData ); 
+				if( useTimeDifferencedLI )
+				{
+					try
+					{
+							// An initialization process is needed 
+						TypeIDSet& tySet = sysLITypes(sat.system);
+						const TypeID& liType = *(tySet.begin());
+
+						TypeID type( liType.ConvertToTimeDiffType(1));
+						size_t s( satLIDataDeque(sat)(type).size() );
+
+						if( s < minBufferSize )
+						{
+							satTimeDiffData.removeSatID(sat);
+						} // End of ' if( s < minBufferSize ) '
+					}
+					catch( ... )
+					{
+							// Just continue 
+						continue;
+					}  
+
+				} // End of ' if( useTimeDifferencedLI ) '
 
  			}   // End of ' for( it = gData.begin();  ... '
 
@@ -224,6 +255,21 @@ namespace gpstk
 					// Compute IB Success Rate
 				SuccessRate sr( cycleSlipCov );
 				SR = sr.getSuccessRate();
+
+				if( SR > 0.9 )
+				{
+					size_t s( cycleSlipVec.size() );
+					for( size_t i=0; i<s; i++ )
+					{
+						std::cout << ambColSat[i] << " fixed CS value: "
+							 << mlambda.getFixedAmbVec()(i) << std::endl;
+					} // End of ' for( size_t i=0; i<s; i++ ) '
+				}
+				else{
+				
+					std::cout << " No CSR" << std::endl;
+				
+				} // End of 'if( SR > 0.9 )'
 
 			}   
 			else
@@ -702,6 +748,9 @@ namespace gpstk
 					//hMatrix( i, numCoorVar+1+(bandIndex+1)*numOfSats+j ) = 
 					hMatrix( i, numCoorVar+1+numOfSats+acPhaseFreqNum+bandIndex ) = 
 						getWavelength( sat, band );
+
+						// Record the Ambiguity index
+					ambColSat[ acPhaseFreqNum+bandIndex ] = sat;
 				}
 				else if( roi.type == ObsID::otRange )
 				{
@@ -713,6 +762,9 @@ namespace gpstk
 					GPSTK_THROW( TypeIDNotFound(getClassName() + " unrecognised type!") );
 				}
 
+					// Record the row index of this sat
+				rowSat[i] = sat;
+
 					//	Increment for row 
 				i++;
 	
@@ -722,11 +774,34 @@ namespace gpstk
 				// Add virtual measurement of ionospheric delay variation
 			if( useTimeDifferencedLI )
 			{
-				double ion(0.0), ionVar(1.0);
-				getSmoothDeltaLI( sat, TypeID::dLI, ion, ionVar );
+				double ion(0.0), value(0.0), ionVar(1.0), var(1.0);
+
+					// Pick one LI type from sysLiTypes, the first one by default
+				TypeIDSet liTypes( sysLITypes(sat.system) );
+				TypeID type( *(liTypes.begin()));
+
+					// Get band
+				int b1( GetLITypeCarrierBand( type, 1 ) );
+				int b2( GetLITypeCarrierBand( type, 2 ) );
+
+					// Get miu 
+				double miu1( getMiu(sat.system, b1) );
+				double miu2( getMiu(sat.system, b2) );
+
+				//std::cout << sat << " " <<  type <<  " b1: " << b1 << " b2: " << b2 
+				//				<< " miu1: " << miu1 << " miu2: " << miu2 << std::endl; 
+					// Convert type to differential form 
+				TypeID dLI( type.ConvertToTimeDiffType(1) );
+
+				getSmoothDeltaLI( sat, dLI, value, var );
+
+					// Compute deltaLI and its variance
+				ion = value/(miu2-miu1);
+				ionVar = var/((miu2-miu1)*(miu2-miu1));
+
 				rMatrix( i, i ) = unitWeightStd*unitWeightStd/ionVar;
 
-				std::cout << sat << " ion std: " << std::sqrt( ionVar ) << std::endl;
+				std::cout << sat << " " <<  type << " ion: " << ion << "iStd: " << std::sqrt(ionVar) << std::endl;
 			}
 			else
 			{
@@ -736,9 +811,12 @@ namespace gpstk
 				rMatrix( i, i ) = ionoWeight*ionoWeight;
 			}
 
-				// Only one coefficients for this virtual obs  
+				// Only one coefficient for this virtual obs  
 			hMatrix( i, numCoorVar+1+j ) = 1.0;
 				
+				// Record this row 
+			rowSat[i] = sat;
+
 				// Preparation for next sat
 			i++;   // Donot forget!!! 
 			j++;
@@ -753,6 +831,7 @@ namespace gpstk
 		//std::cout << "hMatrix: " << std::endl;
 		//std::cout << hMatrix << std::endl;
 		//exit(-1);
+		std::cout << "j: " << j << std::endl;
 		// debug code ^^^
 
 			// Now employ a solver 
@@ -859,7 +938,7 @@ namespace gpstk
 		 * obsTypes.
 		 *
 		 * @param sat
-		 * @param type
+		 * @param type  I postprefit type, lile: postprefitL1, postdLI
 		 * 
 		 */
 	double CycleSlipEstimator::getPostfitResidual( SatID sat, TypeID type )
@@ -1151,28 +1230,29 @@ namespace gpstk
 			} // End of ' for( std::deque<double>::const_iterator ... '
 
 			adLI = stat.Average();
+			var = stat.Variance();
 
 				// Std of deltaLI in zenith direction
-			double lStd( obsStd.getGNSSObsSTD( sat.system, TypeID::prefitL1 ) );
-			double dLIVar( 4*lStd*lStd );
+//			double lStd( obsStd.getGNSSObsSTD( sat.system, TypeID::prefitL1 ) );
+//			double dLIVar( 4*lStd*lStd );
 
-			var = dLIVar/(s*s);
-				// Compute the variance of the weighted average  
-			double sum(0.0);
-			for( size_t i=0; i<s; i++ )
-			{
-				double c( 1.0/weights[i] );	
-				sum += c*c;
-			} // End of 'for( size_t i=0; i<s; i++ )'
-
-			if( sum != 0 )
-			{	
-				var = var*sum;
-			}
-			else
-			{
-				Exception e("Error in Computing weight");
-			} // End of 'if( sum != 0 )'
+//			var = dLIVar/(s*s);
+//				// Compute the variance of the weighted average  
+//			double sum(0.0);
+//			for( size_t i=0; i<s; i++ )
+//			{
+//				double c( 1.0/weights[i] );	
+//				sum += c*c;
+//			} // End of 'for( size_t i=0; i<s; i++ )'
+//
+//			if( sum != 0 )
+//			{	
+//				var = var*sum;
+//			}
+//			else
+//			{
+//				Exception e("Error in Computing weight");
+//			} // End of 'if( sum != 0 )'
 
 		}
 		catch( ... )
