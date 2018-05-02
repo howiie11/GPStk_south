@@ -1,17 +1,10 @@
-#pragma ident "$Id$"
-
-/**
- * @file SolverPPPMGEX.cpp
- * Class to compute the PPP Solution.
- */
-
 //============================================================================
 //
 //  This file is part of GPSTk, the GPS Toolkit.
 //
 //  The GPSTk is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU Lesser General Public License as published
-//  by the Free Software Foundation; either version 2.1 of the License, or
+//  by the Free Software Foundation; either version 3.0 of the License, or
 //  any later version.
 //
 //  The GPSTk is distributed in the hope that it will be useful,
@@ -22,33 +15,34 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with GPSTk; if not, write to the Free Software Foundation,
 //  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-//
+//  
+//  Copyright 2004, The University of Texas at Austin
 //  Dagoberto Salazar - gAGE ( http://www.gage.es ). 2008, 2009, 2011
 //
 //============================================================================
-//  
-//  Revision
-//
-//  2014/03/01   Change the state/covariance transferring. In the previous
-//               version, the satSet will be inserted into currSatSet. Now, 
-//               only the currSatSet is used.
-//
-//  2014/03/10   Add the 'SVNumException', which will throw exception if the
-//               observed satellite number is less than 4.
-//
-//  2014/03/10   The 'SVNumException' and 'ProcessingException' should be
-//               seperated. So, the 'SVNumException' throw should be thrown
-//               independently.
-//
-//  2015/11/06   No Longer throw SVNumException
-//
-//============================================================================
 
+//============================================================================
+//
+//This software developed by Applied Research Laboratories at the University of
+//Texas at Austin, under contract to an agency or agencies within the U.S. 
+//Department of Defense. The U.S. Government retains all rights to use,
+//duplicate, distribute, disclose, or release this software. 
+//
+//Pursuant to DoD Directive 523024 
+//
+// DISTRIBUTION STATEMENT A: This software has been approved for public 
+//                           release, distribution is unlimited.
+//
+//=============================================================================
+
+/**
+ * @file SolverPPPMGEX.cpp
+ * Class to compute the PPP Solution.
+ */
 
 #include "SolverPPPMGEX.hpp"
 #include "MatrixFunctors.hpp"
 
-using namespace std;
 
 namespace gpstk
 {
@@ -70,13 +64,9 @@ namespace gpstk
        *
        * @param useNEU   If true, will compute dLat, dLon, dH coordinates;
        *                 if false (the default), will compute dx, dy, dz.
-       *
        */
    SolverPPPMGEX::SolverPPPMGEX(bool useNEU)
-      : firstTime(true), converged(false), bufferSize(120),
-		  ISBEGFlag( false ),
-		  reInitialize(false), reIntialInterv(864000000.0),
-		  precisionStandard(0.1)
+      : firstTime(true), multiSys(false), employR(false), numISB(0)
    {
 
          // Set the equation system structure
@@ -84,29 +74,6 @@ namespace gpstk
 
          // Call initializing method
       Init();
-
-
-   }  // End of 'SolverPPPMGEX::SolverPPPMGEX()'
-
-      /* Common constructor.
-       *
-       * @param useNEU   If true, will compute dLat, dLon, dH coordinates;
-       *                 if false (the default), will compute dx, dy, dz.
-       * @param ISBEGFlag 
-       */
-   SolverPPPMGEX::SolverPPPMGEX(bool useNEU, bool isbEGFlag )
-      : firstTime(true), converged(false), bufferSize(120),
-		  ISBEGFlag( isbEGFlag ),
-		  reInitialize(false), reIntialInterv(864000000.0),
-		  precisionStandard(0.1)
-   {
-
-         // Set the equation system structure
-      setNEU(useNEU);
-
-         // Call initializing method
-      Init();
-
 
    }  // End of 'SolverPPPMGEX::SolverPPPMGEX()'
 
@@ -132,9 +99,8 @@ namespace gpstk
          // Pointer to default receiver clock stochastic model (white noise)
       pClockStoModel = &whitenoiseModel;
 
-         /// Pointer to stochastic model for ISB (constant)
-//      pISBStoModel = &constantModel;
-      pISBStoModel = &rwalkModel;
+			// Pointer to stochastic model for ISB (constant)
+		pISBStoModel = &whitenoiseModel;
 
          // Pointer to stochastic model for phase biases
       pBiasStoModel  = &biasModel;
@@ -145,46 +111,6 @@ namespace gpstk
 
 
    }  // End of method 'SolverPPPMGEX::Init()'
-
-      /* Returns the solution associated to a given TypeID.
-       *
-       * @param type    TypeID of the solution we are looking for.
-       */
-   double SolverPPPMGEX::getSolution(const TypeID& type) const
-      throw(InvalidRequest)
-   {
-
-         // Define iterator
-//      TypeIDSet::const_iterator it;
-      TypeIDList::const_iterator it;
-
-         // Check if the provided type exists in the solution. If not,
-         // an InvalidSolver exception will be issued.
-//      it = defaultEqDef.body.find(type);
-		TypeIDList::const_iterator itStart = defaultEqDef2.body.begin();
-		TypeIDList::const_iterator itEnd = defaultEqDef2.body.end();
-      it = find(itStart, itEnd, type);
-      if( it == defaultEqDef2.body.end() )
-      {
-         InvalidRequest e("Type not found in solution vector.");
-         GPSTK_THROW(e);
-      }
-
-
-         // Define counter
-      int counter(0);
-
-         // Define a new iterator and count where the given type is
-      //TypeIDSet::const_iterator it2;
-      TypeIDList::const_iterator it2;
-      for (it2 = defaultEqDef2.body.begin(); it2!= it; it2++)
-      {
-         ++counter;
-      }
-
-      return solution(counter);
-
-   }  // End of method 'SolverPPPMGEX::getSolution()'
 
 
 
@@ -265,7 +191,6 @@ of weightVector");
 
       if (!(weightMatrix.isSquare()))
       {
-		 std::cout<<"row="<< weightMatrix.rows()<<",col="<<weightMatrix.cols()<<std::endl;
          InvalidSolver e("Weight matrix is not square");
          GPSTK_THROW(e);
       }
@@ -334,6 +259,7 @@ covariance matrix.");
 
       try
       {
+
             // Call the Kalman filter object.
          kFilter.Compute( phiMatrix,
                           qMatrix,
@@ -371,7 +297,7 @@ covariance matrix.");
        * @param gData    Data object holding the data.
        */
    gnssSatTypeValue& SolverPPPMGEX::Process(gnssSatTypeValue& gData)
-      throw(ProcessingException, SVNumException)
+      throw(ProcessingException)
    {
 
       try
@@ -390,11 +316,6 @@ covariance matrix.");
 
          return gData;
 
-      }
-      catch(SVNumException& s)
-      {
-            // Rethrow the SVNumException
-         GPSTK_RETHROW(s);
       }
       catch(Exception& u)
       {
@@ -416,17 +337,34 @@ covariance matrix.");
        * @param gData     Data object holding the data.
        */
    gnssRinex& SolverPPPMGEX::Process(gnssRinex& gData)
-      throw(ProcessingException, SVNumException)
+      throw(ProcessingException)
    {
-
-         // Get a set with all satellites present in this GDS
-      SatIDSet currSatSet( gData.body.getSatID() );
-
-         // Get the number of satellites currently visible
-      int numCurrentSV( gData.numSats() );
 
       try
       {
+
+            // Please note that there are two different sets being defined:
+            //
+            // - "currSatSet" stores satellites currently in view, and it is
+            //   related with the number of measurements.
+            //
+            // - "satSet" stores satellites being processed; this set is
+            //   related with the number of unknowns.
+            //
+
+
+            // Get a set with all satellites present in this GDS
+         SatIDSet currSatSet( gData.body.getSatID() );
+
+            // Get the number of satellites currently visible
+         size_t numCurrentSV( gData.numSats() );
+
+            // Update set with satellites being processed so far
+         satSet.insert( currSatSet.begin(), currSatSet.end() );
+
+            // Get the number of satellites to be processed
+         size_t numSV( satSet.size() );
+
             // Number of measurements is twice the number of visible satellites
          numMeas = 2 * numCurrentSV;
 
@@ -434,32 +372,47 @@ covariance matrix.");
 //         numVar = defaultEqDef.body.size();
          numVar = defaultEqDef2.body.size();
 
-//			// Debug code vvv
-//			std::cout << "defaultEqDef2.body: " << std::endl;
-//			for( TypeIDList::iterator ite = defaultEqDef2.body.begin();
-//				 ite != defaultEqDef2.body.end();
-//				 ++ite )
-//			{
-//				std::cout << *ite << std::endl;
-//			}
-//
-////			exit(-1);
-//
-//			// Debug code ^^^ 
-
             // Total number of unknowns is defined as variables + processed SVs
-         numUnknowns = numVar + numCurrentSV;
+         numUnknowns = numVar + numSV;
 
-//			// Debug code vvv
-//			
+				// In the multi-system case, 'numUnknowns' is related to the sat 
+				// systems used due to the additional ISB(inter system biases) 
+				// parameters.
+				// sys			station				sat
+				// Galileo		dependent			-
+				// BeiDou		dependent			-
+				// Glonass		dependent			dependent
+				// 
+				// numUnknowns = numVar + numISB + numSV;
+
+			if( multiSys )
+			{
+				if( employR )
+				{
+					satTypeValueMap Rmap(gData.body.extractSatSystem(SatID::systemGlonass) );
+					int numRSats( Rmap.numSats() );
+
+						// update ISB number
+					numISB += numRSats;
+				}
+
+				numUnknowns += numISB;
+			} // End of 'if( multiSys )'
+
+
+			// Debug code vvv
+//			using namespace std;	
 //			CivilTime ct( gData.header.epoch );
 //			cout << ct.year << " "<< ct.month << " "
 //					<< ct.day << " " << ct.hour << " "
 //					<< ct.minute << " " << ct.second << endl;
 //			cout << "numMeas: " << numMeas << endl;
+//			cout << "numISB: " << numISB << endl;
 //			cout << "numUnknowns: " << numUnknowns << endl;
-//
-//			// Debug code ^^^ 
+
+			// Debug code ^^^ 
+
+
 
             // State Transition Matrix (PhiMatrix)
          phiMatrix.resize(numUnknowns, numUnknowns, 0.0);
@@ -471,6 +424,7 @@ covariance matrix.");
             // Build the vector of measurements (Prefit-residuals): Code + phase
          measVector.resize(numMeas, 0.0);
 
+//         Vector<double> prefitC(gData.getVectorOfTypeID(defaultEqDef.header));
          Vector<double> prefitC(gData.getVectorOfTypeID(defaultEqDef2.header));
          Vector<double> prefitL(gData.getVectorOfTypeID(TypeID::prefitL));
          for( int i=0; i<numCurrentSV; i++ )
@@ -487,9 +441,8 @@ covariance matrix.");
             // Try to extract weights from GDS
          satTypeValueMap dummy(gData.body.extractTypeID(TypeID::weight));
 
-
             // Check if weights match
-         if ( dummy.numSats() == numCurrentSV )
+         if ( dummy.numSats() == (size_t)numCurrentSV )
          {
 
                // If we have weights information, let's load it
@@ -523,10 +476,12 @@ covariance matrix.");
          }  // End of 'if ( dummy.numSats() == numCurrentSV )'
 
 
+
             // Generate the corresponding geometry/design matrix
          hMatrix.resize(numMeas, numUnknowns, 0.0);
 
             // Get the values corresponding to 'core' variables
+//         Matrix<double> dMatrix(gData.body.getMatrixOfTypes(defaultEqDef.body));
          Matrix<double> dMatrix(gData.body.getMatrixOfTypes(defaultEqDef2.body));
 
             // Let's fill 'hMatrix'
@@ -545,6 +500,55 @@ covariance matrix.");
          }  // End of 'for( int i=0; i<numCurrentSV; i++ )'
 
 
+				// Now, fill the coefficients related to ISB
+			if( multiSys )
+			{
+				int c4(0);
+				for( SatIDSet::const_iterator itSat = currSatSet.begin(); 
+					  itSat != currSatSet.end(); 
+					  ++itSat )
+				{
+					std::cout << *itSat << " ";
+				}
+				std::cout << std::endl;
+					
+				for( SatSystemSet::const_iterator itSys = satSysSet.begin(); 
+					  itSys != satSysSet.end(); 
+					  ++itSys )
+				{
+					SatID::SatelliteSystem sys = *itSys;
+
+						// GPS is the datum, skip
+						// Glonass ISB also denpends on specific sat
+						// we deal with this sys later 
+					if( sys == SatID::systemGPS || sys == SatID::systemGlonass )
+					{ continue; } 
+
+					int numCurrentSysSV( gData.body.extractSatSystem(sys).numSats() );
+					
+						// Row start recorder of sys
+					int rowStart(0);
+	
+					SatIDSet::const_iterator itSat( currSatSet.begin() );
+					while( (*itSat).system != sys )
+					{
+						++rowStart;
+						++itSat;
+					}
+
+						// Insert ISB coefficients
+					for( int i=0; i<numCurrentSysSV; i++ )
+					{
+						hMatrix( rowStart + i, numVar + c4 ) = 1;
+						hMatrix( rowStart + i + numCurrentSV, numVar + c4 ) = 1;
+					}
+
+					++c4;
+					
+				}  // End of ' for( SatSystemSet::const_iterator itSys ... '
+
+			} // End of 'if( multiSys )'
+
             // Now, fill the coefficients related to phase biases
             // We must be careful because not all processed satellites
             // are currently visible
@@ -553,13 +557,31 @@ covariance matrix.");
               itSat != currSatSet.end();
               ++itSat )
          {
+
+               // Find in which position of 'satSet' is the current '(*itSat)'
+               // Please note that 'currSatSet' is a subset of 'satSet'
+            int j(0);
+            SatIDSet::const_iterator itSat2( satSet.begin() );
+            while( (*itSat2) != (*itSat) )
+            {
+               ++j;
+               ++itSat2;
+            }
+
                // Put coefficient in the right place
-            hMatrix( count1 + numCurrentSV, count1 + numVar ) = 1.0;
+//            hMatrix( count1 + numCurrentSV, j + numVar ) = 1.0;
+            hMatrix( count1 + numCurrentSV, j + numVar + numISB ) = 1.0;
 
             ++count1;
 
-         }  // End of 'for( itSat = currSatSet.begin(); ... )'
+         }  // End of 'for( itSat = satSet.begin(); ... )'
 
+
+			// Debug code vvv
+//			std::cout << "hMatrix" << std::endl; 
+//			std::cout << hMatrix << std::endl;
+//			exit(-1);
+			// Debug code ^^^ 
 
             // Now, let's fill the Phi and Q matrices
          SatID  dummySat;
@@ -569,6 +591,7 @@ covariance matrix.");
                                   gData );
          phiMatrix(0,0) = pTropoStoModel->getPhi();
          qMatrix(0,0)   = pTropoStoModel->getQ();
+
 
             // Second, the coordinates
          pCoordXStoModel->Prepare(dummySat, gData);
@@ -583,6 +606,7 @@ covariance matrix.");
          phiMatrix(3,3) = pCoordZStoModel->getPhi();
          qMatrix(3,3)   = pCoordZStoModel->getQ();
 
+
             // Third, the receiver clock
          pClockStoModel->Prepare( dummySat,
                                   gData );
@@ -590,20 +614,25 @@ covariance matrix.");
          qMatrix(4,4)   = pClockStoModel->getQ();
 
 
-				// Optional: ISB
-			if( ISBEGFlag )
+				// Fourth, the ISB if multi system  
+			if( multiSys )
 			{
-				pISBStoModel->Prepare( dummySat, gData );
+					// TODO seperate consideration of Glonass ISB 
+				for( int i=0; i<numISB; i++ )
+				{
+					pISBStoModel->Prepare( dummySat,
+												  gData );
+					phiMatrix( numVar + i, numVar + i ) = pISBStoModel->getPhi();
+					qMatrix( numVar + i, numVar + i ) = pISBStoModel->getQ();
 
-				phiMatrix(5,5) = pISBStoModel->getPhi();
-				qMatrix(5,5) = pISBStoModel->getQ();
-			}
+				} // End of 'for( int i-0; i<numISB; i++ )'
 
+			}  // End of 'if( multiSys )'
 
             // Finally, the phase biases
-         int count2(numVar);     // Note that for PPP, 'numVar' is always 5!!!
-         for( SatIDSet::const_iterator itSat = currSatSet.begin();
-              itSat != currSatSet.end();
+         int count2(numVar+numISB);     // Note that for MPPP, 'numVar' is always 5 + numISB!!!
+         for( SatIDSet::const_iterator itSat = satSet.begin();
+              itSat != satSet.end();
               ++itSat )
          {
 
@@ -618,7 +647,13 @@ covariance matrix.");
             ++count2;
          }
 
-//         double sod( (gData.header.epoch).getSecondOfDay() );
+
+			// Debug code vvv
+//			std::cout << "phiMatrix" << std::endl; 
+//			std::cout << phiMatrix << std::endl;
+//			std::cout << "qMatrix" << std::endl; 
+//			std::cout << qMatrix << std::endl;
+			// Debug code ^^^ 
 
             // Feed the filter with the correct state and covariance matrix
          if(firstTime)
@@ -644,293 +679,175 @@ covariance matrix.");
                // Third, the receiver clock
             initialErrorCovariance(4,4) = 9.0e10;        // (300 km)**2
 
-					// Optional, the ISB
-				if( ISBEGFlag )
+					// Then, the ISB
+				if(multiSys)
 				{
-					initialErrorCovariance(5, 5) = 10-4;			// (1 m)^2
-				}
+					for( int i=0; i<numISB; i++ )
+					{
+						initialErrorCovariance( numVar + i, numVar + i ) = 
+							9.0e10;	// (10m)**2
 
+					}
+				}
                // Finally, the phase biases
-            for( int i=numVar; i<numUnknowns; i++ )
+            for( int i=numVar+numISB; i<numUnknowns; i++ )
             {
                initialErrorCovariance(i,i) = 4.0e14;     // (20000 km)**2
             }
 
+
                // Reset Kalman filter
             kFilter.Reset( initialState, initialErrorCovariance );
-
-					// record the first epoch
-				firstEpoch = gData.header.epoch;
 
                // No longer first time
             firstTime = false;
 
-               // Not converged!
-            converged = false;
-
-               // reset solution
-            resetSol = true;
-
-
-				double sod( (gData.header.epoch).getSecondOfDay() );
-
-               // Start time to compute the convergence time
-            startTime = sod;
-				startTimeVec.push_back(startTime);
-
          }
          else
          {
-				// vvv Try to add reinitialization code 
-				
-					// Current Epoch
-				CommonTime currEpoch( gData.header.epoch );
-
-					// Offset
-				double timeOffset( currEpoch - firstEpoch ); 
-
-				double sod( (gData.header.epoch).getSecondOfDay() );
-
-				double tolerance(0.5);
-				double lowerBound( std::abs(tolerance) );
-				double upperBound( std::abs(reIntialInterv - tolerance) );
 
                // Adapt the size to the current number of unknowns
             Vector<double> currentState(numUnknowns, 0.0);
             Matrix<double> currentErrorCov(numUnknowns, numUnknowns, 0.0);
 
-				if( reInitialize &&
-					 ( ( (int)(timeOffset) % (int)(reIntialInterv) < lowerBound ) ||
-					 ( (int)(timeOffset) % (int)(reIntialInterv) > upperBound ) ) )
+
+               // Set first part of current state vector and covariance matrix
+            for( int i=0; i<numVar; i++ )
+            {
+               currentState(i) = solution(i);
+
+                  // This fills the upper left quadrant of covariance matrix
+               for( int j=0; j<numVar; j++ )
+               {
+                  currentErrorCov(i,j) =  covMatrix(i,j);
+               }
+            }
+
+					// ISB state and covariance  
+				if( multiSys )
 				{
+					int c4(numVar);
 
-						// reset solution
-					resetSol = true;
-						// Record the restart time
-					converged = false;
-
-						// Record the restart time
-					startTime = sod;
-					startTimeVec.push_back(startTime);
-
-//						// Firstly, fill the state and covariance matrix for
-//						// source-indexed variables
-//					for( int i=0; i<numVar; i++ )
-//					{
-//						currentState(i) = solution(i);
-//
-//							// This fills the upper left quadrant of covariance matrix
-//						for( int j=0; j<numVar; j++ )
-//						{
-//							currentErrorCov(i,j) =  covMatrix(i,j);
-//						}		// End of ' for( int j=0; j<numVar; j++ ) '
-//					}  // End of ' for( int i=0; i<numVar; i++ ) '
-					
-						// First, the zenital wet tropospheric delay
-					currentErrorCov(0,0) = 0.25;          // (0.5 m)**2
-
-						// Second, the coordinates
-					for( int i=1; i<4; i++ )
-				   {
-						currentErrorCov(i,i) = 10000.0;    // (100 m)**2
-				   }
-
-						// Third, the receiver clock
-				   currentErrorCov(4,4) = 9.0e10;        // (300 km)**2
-
-						// Optional, the ISB
-				   if( ISBEGFlag )
-				   {
-						currentErrorCov(5, 5) = 10-4;			// (1 m)^2
-				   }
-
-						// Then, reset the ambiguity, which is equivalent
-						// to introducing cycle slips for all satellites.
-					for( int i=numVar; i<numUnknowns; i++ )
+					for( SatSystemSet::const_iterator itSys = satSysSet.begin(); 
+						  itSys != satSysSet.end(); 
+						  ++itSys )
 					{
-						currentErrorCov(i,i) = 4.0e14;     // (20000 km)**2
+						SatID::SatelliteSystem sys = *itSys;
+
+							// GPS is the datum, skip
+							// Glonass ISB also denpends on specific sat
+							// we deal with this sys later 
+						if( sys == SatID::systemGPS || sys == SatID::systemGlonass )
+						{ continue; } 
+
+						currentState(c4) = solution(c4);
+
+
+						for( int j=0; j<=c4; j++ )
+						{
+							currentErrorCov( c4, j ) = currentErrorCov( j, c4 ) 
+															 =  covMatrix( c4, j );
+						}
+						
+						++c4;
+					} // End of ' for( SatSystemSet::const_iterator itSys = ... '
+
+				} // End of 'if( multiSys )'
+
+
+
+               // Fill in the rest of state vector and covariance matrix
+               // These are values that depend on satellites being processed
+            int c1(numVar+numISB);
+            for( SatIDSet::const_iterator itSat = satSet.begin();
+                 itSat != satSet.end();
+                 ++itSat )
+            {
+
+                  // Put ambiguities into state vector
+               currentState(c1) = KalmanData[*itSat].ambiguity;
+
+                  // Put ambiguities covariance values into covariance matrix
+                  // This fills the lower right quadrant of covariance matrix
+               int c2(numVar+numISB);
+               SatIDSet::const_iterator itSat2;
+               for( itSat2 = satSet.begin(); itSat2 != satSet.end(); ++itSat2 )
+               {
+
+                  currentErrorCov(c1,c2) = KalmanData[*itSat].aCovMap[*itSat2];
+                  currentErrorCov(c2,c1) = KalmanData[*itSat].aCovMap[*itSat2];
+
+                  ++c2;
+               }
+
+                  // Put variables X ambiguities covariances into
+                  // covariance matrix. This fills the lower left and upper
+                  // right quadrants of covariance matrix
+               int c3(0);
+//               TypeIDSet::const_iterator itType;
+//               for( itType  = defaultEqDef.body.begin();
+//                    itType != defaultEqDef.body.end();
+//                    ++itType )
+               TypeIDList::const_iterator itType;
+               for( itType  = defaultEqDef2.body.begin();
+                    itType != defaultEqDef2.body.end();
+                    ++itType )
+               {
+
+                  currentErrorCov(c1,c3) = KalmanData[*itSat].vCovMap[*itType];
+                  currentErrorCov(c3,c1) = KalmanData[*itSat].vCovMap[*itType];
+
+                  ++c3;
+               }
+
+					if( multiSys )
+					{
+						int c5(numVar);
+	
+						for( SatSystemSet::const_iterator itSys = satSysSet.begin(); 
+							  itSys != satSysSet.end(); 
+							  ++itSys )
+						{
+							SatID::SatelliteSystem sys = *itSys;
+	
+								// GPS is the datum, skip
+								// Glonass ISB also denpends on specific sat
+								// we deal with this sys later 
+							if( sys == SatID::systemGPS || sys == SatID::systemGlonass )
+							{ continue; } 
+	
+							currentErrorCov(c1,c5) = KalmanData[*itSat].isbCovMap[sys];
+							currentErrorCov(c5,c1) = KalmanData[*itSat].isbCovMap[sys];
+							
+							++c5;
+						} // End of 'for( SatSystemSet::const_iterator itSys ... '
+
+					if( employR )
+					{
+//						KalmanData[*itSat].isbRCovMap[]
+							// Loop through every Glonass sat 
+							// TO DO
 					}
-				}
-				else
-				{		// update as common 
-	
-						// Set first part of current state vector and covariance matrix
-	            for( int i=0; i<numVar; i++ )
-	            {
-	               currentState(i) = solution(i);
-	
-	                  // This fills the upper left quadrant of covariance matrix
-	               for( int j=0; j<numVar; j++ )
-	               {
-	                  currentErrorCov(i,j) =  covMatrix(i,j);
-	               }
-	            }
-	
-	
-	               // Temporary satellite set
-	            SatIDSet tempSatSet(currSatSet);
-	
-	               // Fill in the rest of state vector and covariance matrix
-	               // These are values that depend on satellites being processed
-	            int c1(numVar);
-	            for( SatIDSet::const_iterator itSat = currSatSet.begin();
-	                 itSat != currSatSet.end();
-	                 ++itSat )
-	            {
-	                  // Put ambiguities into state vector
-	               currentState(c1) = ambiguityMap[*itSat];
-	
-	
-	               if( ambCovMap.find( (*itSat) ) != ambCovMap.end() )
-	               {
-	
-	                     // Fill the diagonal element
-	                  currentErrorCov(c1,c1) = ambCovMap[*itSat].aCovMap[*itSat];
-	               }
-	               else
-	               {
-	                  currentErrorCov(c1,c1) = 4.0e+14;
-	               }
-	
-	                  // Put ambiguities covariance values into covariance matrix
-	                  // This fills the lower right quadrant of covariance matrix
-	               int c2(c1+1);
-	
-	                  // Remove current sat from 'tempSatSet'
-	               tempSatSet.erase( (*itSat) ); 
-	
-	               for( SatIDSet::const_iterator itSat2 = tempSatSet.begin(); 
-	                    itSat2 != tempSatSet.end(); 
-	                    ++itSat2 )
-	               {
-	
-	                  currentErrorCov(c1,c2) = ambCovMap[*itSat].aCovMap[*itSat2];
-	                  currentErrorCov(c2,c1) = ambCovMap[*itSat].aCovMap[*itSat2];
-	
-	                  ++c2;
-	               }
-	
-	                  // Put variables X ambiguities covariances into
-	                  // covariance matrix. This fills the lower left and upper
-	                  // right quadrants of covariance matrix
-	               int c3(0);
-	//               TypeIDSet::const_iterator itType;
-	//               for( itType  = defaultEqDef.body.begin();
-	//                    itType != defaultEqDef.body.end();
-	//                    ++itType )
-	               TypeIDList::const_iterator itType;
-	               for( itType  = defaultEqDef2.body.begin();
-	                    itType != defaultEqDef2.body.end();
-							  ++itType )
-	               {
-	
-	                  currentErrorCov(c1,c3) = ambCovMap[*itSat].vCovMap[*itType];
-	                  currentErrorCov(c3,c1) = ambCovMap[*itSat].vCovMap[*itType];
-	
-	                  ++c3;
-	               }
-	
-	               ++c1;
-	            }
-	
+
+				}	// End of ' if( multiSys ) '
 
 
-				}  // End of ' if( reInitialize && ... '
-	               
-					// Reset Kalman filter to current state and covariance matrix
-	         kFilter.Reset( currentState, currentErrorCov );
 
-				// ^^^ Try to add reinitialization code 
-
-//               // Adapt the size to the current number of unknowns
-//            Vector<double> currentState(numUnknowns, 0.0);
-//            Matrix<double> currentErrorCov(numUnknowns, numUnknowns, 0.0);
+               ++c1;
+            }
 
 
-//               // Set first part of current state vector and covariance matrix
-//            for( int i=0; i<numVar; i++ )
-//            {
-//               currentState(i) = solution(i);
-//
-//                  // This fills the upper left quadrant of covariance matrix
-//               for( int j=0; j<numVar; j++ )
-//               {
-//                  currentErrorCov(i,j) =  covMatrix(i,j);
-//               }
-//            }
-//
-//
-//               // Temporary satellite set
-//            SatIDSet tempSatSet(currSatSet);
-//
-//               // Fill in the rest of state vector and covariance matrix
-//               // These are values that depend on satellites being processed
-//            int c1(numVar);
-//            for( SatIDSet::const_iterator itSat = currSatSet.begin();
-//                 itSat != currSatSet.end();
-//                 ++itSat )
-//            {
-//                  // Put ambiguities into state vector
-//               currentState(c1) = ambiguityMap[*itSat];
-//
-//
-//               if( ambCovMap.find( (*itSat) ) != ambCovMap.end() )
-//               {
-//
-//                     // Fill the diagonal element
-//                  currentErrorCov(c1,c1) = ambCovMap[*itSat].aCovMap[*itSat];
-//               }
-//               else
-//               {
-//                  currentErrorCov(c1,c1) = 4.0e+14;
-//               }
-//
-//                  // Put ambiguities covariance values into covariance matrix
-//                  // This fills the lower right quadrant of covariance matrix
-//               int c2(c1+1);
-//
-//                  // Remove current sat from 'tempSatSet'
-//               tempSatSet.erase( (*itSat) ); 
-//
-//               for( SatIDSet::const_iterator itSat2 = tempSatSet.begin(); 
-//                    itSat2 != tempSatSet.end(); 
-//                    ++itSat2 )
-//               {
-//
-//                  currentErrorCov(c1,c2) = ambCovMap[*itSat].aCovMap[*itSat2];
-//                  currentErrorCov(c2,c1) = ambCovMap[*itSat].aCovMap[*itSat2];
-//
-//                  ++c2;
-//               }
-//
-//                  // Put variables X ambiguities covariances into
-//                  // covariance matrix. This fills the lower left and upper
-//                  // right quadrants of covariance matrix
-//               int c3(0);
-////               TypeIDSet::const_iterator itType;
-////               for( itType  = defaultEqDef.body.begin();
-////                    itType != defaultEqDef.body.end();
-////                    ++itType )
-//               TypeIDList::const_iterator itType;
-//               for( itType  = defaultEqDef2.body.begin();
-//                    itType != defaultEqDef2.body.end();
-//						  ++itType )
-//               {
-//
-//                  currentErrorCov(c1,c3) = ambCovMap[*itSat].vCovMap[*itType];
-//                  currentErrorCov(c3,c1) = ambCovMap[*itSat].vCovMap[*itType];
-//
-//                  ++c3;
-//               }
-//
-//               ++c1;
-//            }
-//
-//               // Reset Kalman filter to current state and covariance matrix
-//            kFilter.Reset( currentState, currentErrorCov );
-//
-//
+               // Reset Kalman filter to current state and covariance matrix
+            kFilter.Reset( currentState, currentErrorCov );
+
+			// Debug 
+//			std::cout << "currentState" << std::endl; 
+//			std::cout << currentState << std::endl;
+//			std::cout << "currentErrorCov" << std::endl; 
+//			std::cout << currentErrorCov << std::endl;
+			// Debug
          }  // End of 'if(firstTime)'
+
 
 
             // Call the Compute() method with the defined equation model.
@@ -942,42 +859,31 @@ covariance matrix.");
                   rMatrix );
 
 
-
-            // Now, clear ambCovMap
-         ambiguityMap.clear();
-         ambCovMap.clear();
-
-
-            // Temporary satellite set
-         SatIDSet tempSatSet(currSatSet);
+			// Debug code vvv
+//			std::cout << "Solution" << std::endl; 
+//			std::cout << solution << std::endl;
+//			std::cout << "CovMatrix" << std::endl; 
+//			std::cout << covMatrix << std::endl;
+			// Debug code ^^^ 
 
             // Store those values of current state and covariance matrix
             // that depend on satellites currently in view
-         int c1(numVar);
-         for( SatIDSet::const_iterator itSat = currSatSet.begin();
-              itSat != currSatSet.end();
+         int c1(numVar+numISB);
+         for( SatIDSet::const_iterator itSat = satSet.begin();
+              itSat != satSet.end();
               ++itSat )
          {
 
                // Store ambiguities
-            ambiguityMap[*itSat] = solution(c1);
-
-               // Fill the diagonal element
-            ambCovMap[*itSat].aCovMap[*itSat] = covMatrix(c1,c1);
-
+            KalmanData[*itSat].ambiguity = solution(c1);
 
                // Store ambiguities covariance values
-            int c2(c1+1);
-
-               // Remove current satellite from 'tempSatSet'
-            tempSatSet.erase( (*itSat) );
-
-            for( SatIDSet::const_iterator itSat2 = tempSatSet.begin(); 
-                 itSat2 != tempSatSet.end(); 
-                 ++itSat2 )
+            int c2(numVar+numISB);
+            SatIDSet::const_iterator itSat2;
+            for( itSat2 = satSet.begin(); itSat2 != satSet.end(); ++itSat2 )
             {
 
-               ambCovMap[*itSat].aCovMap[*itSat2] = covMatrix(c1,c2);
+               KalmanData[*itSat].aCovMap[*itSat2] = covMatrix(c1,c2);
 
                ++c2;
             }
@@ -994,14 +900,44 @@ covariance matrix.");
                  ++itType )
             {
 
-               ambCovMap[*itSat].vCovMap[*itType] = covMatrix(c1,c3);
+               KalmanData[*itSat].vCovMap[*itType] = covMatrix(c1,c3);
 
                ++c3;
             }
 
-            ++c1;
+					// Store variable ISB ambiguities covariance 
+				if( multiSys )
+				{
+					int c4(numVar);
 
-         }  // End of 'for( itSat = currSatSet.begin(); ...'
+					for( SatSystemSet::const_iterator itSys = satSysSet.begin(); 
+						  itSys != satSysSet.end(); 
+						  ++itSys )
+					{
+						SatID::SatelliteSystem sys = *itSys;
+
+							// GPS is the datum, skip
+							// Glonass ISB also denpends on specific sat
+							// we deal with this sys later 
+						if( sys == SatID::systemGPS || sys == SatID::systemGlonass )
+						{ continue; } 
+
+						KalmanData[*itSat].isbCovMap[sys] = covMatrix(c1, c4);
+						
+						++c4;
+					} // End of 'for( SatSystemSet::const_iterator itSys ... '
+
+					if( employR )
+					{
+//						KalmanData[*itSat].isbRCovMap[]
+							// Loop through every Glonass sat 
+							// TO DO
+					}
+
+				}	// End of ' if( multiSys ) '
+
+            ++c1;
+         }  // End of 'for( itSat = satSet.begin(); ...'
 
 
             // Now we have to add the new values to the data structure
@@ -1016,75 +952,8 @@ covariance matrix.");
          gData.insertTypeIDVector(TypeID::postfitC, postfitCode);
          gData.insertTypeIDVector(TypeID::postfitL, postfitPhase);
 
-            // Now Let's insert the ambiguity parameters into 'gData'
-         Vector<double> ambVec(numCurrentSV,0.0);
-         for( int i=0; i<numCurrentSV; i++ )
-         {
-            ambVec(i) = solution(numVar + i) + postfitPhase(i);
-         }
-
-
-         double sod( (gData.header.epoch).getSecondOfDay() );
-
-         double dx = solution(1);
-         double dy = solution(2);
-         double dz = solution(3);
-         double drou = std::sqrt(dx*dx+dy*dy+dz*dz);
-
-         //if(drou < 0.10)
-         if(drou < precisionStandard)
-         {
-            convergBuffer.push_back(true);
-         }
-         else
-         {
-            convergBuffer.push_back(false);
-         }
-
-			convergedTimeBuffer.push_back( sod );
-
-         double size = convergBuffer.size();
-          
-            // If the size is greater than the given value
-         if(size > bufferSize)
-         {
-               // Get rid of oldest data, which is at the beginning of deque
-            convergBuffer.pop_front();
-				convergedTimeBuffer.pop_front();
-         }
-
-            // Update the size
-         size = convergBuffer.size();
-
-            // Only calculate the converge time if resetSol is set!!
-         if(resetSol)
-         {
-               // Now, Let's judge whehter the solution has converged
-            if(size == bufferSize)
-            {
-               converged = convergBuffer[0]; 
-               for(int i=1;i<size;i++)
-               {
-                  converged = converged && convergBuffer[i];
-               }
-            }
-            else
-            {
-               converged = false;
-            }
-
-               // If already converged, then set the 'resetSol' as false.
-            if(converged)
-            {
-						// Get the first epoch in the converged time buffer window
-					sod = *(convergedTimeBuffer.begin());
-               double ttfc = sod - startTime;
-               ttfcVec.push_back(ttfc);
-               resetSol = false;
-            }
-         }
-
-         gData.insertTypeIDVector(TypeID::BLC, ambVec);
+            // Update set of satellites to be used in next epoch
+         satSet = currSatSet;
 
          return gData;
 
@@ -1113,9 +982,8 @@ covariance matrix.");
    {
 
          // First, let's define a set with the typical code-based unknowns
-      //TypeIDSet tempSet;
+//      TypeIDSet tempSet;
 		TypeIDList tempList;
-
          // Watch out here: 'tempSet' is a 'std::set', and all sets order their
          // elements. According to 'TypeID' class, this is the proper order:
 //      tempSet.insert(TypeID::wetMap);  // BEWARE: The first is wetMap!!!
@@ -1142,20 +1010,15 @@ covariance matrix.");
 //      tempSet.insert(TypeID::cdt);     // #5
       tempList.push_back(TypeID::cdt);     // #5
 
-			// Add ISB parameters, only for BDS and Galileo
-		if( ISBEGFlag )	// Galileo
-		{
-			tempList.push_back( TypeID::ISBEG );
-		}
-
          // Now, we build the basic equation definition
+//      defaultEqDef.header = TypeID::prefitC;
+//      defaultEqDef.body = tempSet;
       defaultEqDef2.header = TypeID::prefitC;
       defaultEqDef2.body = tempList;
 
       return (*this);
 
    }  // End of method 'SolverPPPMGEX::setNEU()'
-
 
 
 
@@ -1209,15 +1072,88 @@ covariance matrix.");
 
    }  // End of method 'SolverPPPMGEX::setKinematic()'
 
-
-      /** Return the converged flag.
+      /* Returns the solution associated to a given TypeID.
+       *
+       * @param type    TypeID of the solution we are looking for.
        */
-   bool SolverPPPMGEX::getConverged() const
+   double SolverPPPMGEX::getSolution(const TypeID& type) const
       throw(InvalidRequest)
    {
-         // Return current fixed satellite number
-      return converged;
-   }
+
+		// Debug code 
+
+		std::cout << "type:= " << type << std::endl;
+		// Debug code 
+         // Define iterator
+//      TypeIDSet::const_iterator it;
+      TypeIDList::const_iterator it;
+
+         // Check if the provided type exists in the solution. If not,
+         // an InvalidSolver exception will be issued.
+//      it = defaultEqDef.body.find(type);
+		TypeIDList::const_iterator itStart = defaultEqDef2.body.begin();
+		TypeIDList::const_iterator itEnd = defaultEqDef2.body.end();
+      it = find(itStart, itEnd, type);
+      if( it == defaultEqDef2.body.end() )
+      {
+         InvalidRequest e("Type not found in solution vector.");
+         GPSTK_THROW(e);
+      }
+
+
+         // Define counter
+      int counter(0);
+
+         // Define a new iterator and count where the given type is
+      //TypeIDSet::const_iterator it2;
+      TypeIDList::const_iterator it2;
+      for (it2 = defaultEqDef2.body.begin(); it2!= it; it2++)
+      {
+         ++counter;
+      }
+
+      return solution(counter);
+
+   }  // End of method 'SolverPPPMGEX::getSolution()'
+
+
+		/// Set employed Satellite system set 
+	SolverPPPMGEX& SolverPPPMGEX::setSatSystems(SatSystemSet& satSys )
+	{
+		satSysSet = satSys;
+
+		if( satSysSet.size() > 1 ) 
+		{
+			multiSys = true;
+	
+				// ISB setting
+			for( SatSystemSet::const_iterator itSys = satSysSet.begin(); 
+				  itSys != satSysSet.end(); 
+				  ++itSys )
+			{
+				SatID::SatelliteSystem sys( *itSys );
+
+				if( sys == SatID::systemGPS ) continue;
+	
+					// E or C  
+				if( sys == SatID::systemGalileo || sys == SatID::systemBeiDou )
+				{
+					numISB += 1;
+				}
+
+					// R 
+				if( sys == SatID::systemGlonass )
+				{
+					employR = true; // Compute its ISB contribution in method 'Process'
+				}
+	
+			} // End of 'for( SatSysSet::const_iterator itSys ... ' 
+		}  // End of 'if( satSysSet.size() > 1 )'
+
+		return (*this);
+
+	}  // End of ' SolverPPPMGEX& SolverPPPMGEX::... '
+
 
 
 }  // End of namespace gpstk

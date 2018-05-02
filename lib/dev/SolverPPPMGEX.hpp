@@ -1,20 +1,10 @@
-#pragma ident "$Id$"
-
-/**
- * @file SolverPPPMGEX.hpp
- * Class to compute the PPP Solution.
- */
-
-#ifndef GPSTK_SOLVERPPPMGEX_HPP
-#define GPSTK_SOLVERPPPMGEX_HPP
-
 //============================================================================
 //
 //  This file is part of GPSTk, the GPS Toolkit.
 //
 //  The GPSTk is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU Lesser General Public License as published
-//  by the Free Software Foundation; either version 2.1 of the License, or
+//  by the Free Software Foundation; either version 3.0 of the License, or
 //  any later version.
 //
 //  The GPSTk is distributed in the hope that it will be useful,
@@ -25,22 +15,40 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with GPSTk; if not, write to the Free Software Foundation,
 //  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-//
+//  
+//  Copyright 2004, The University of Texas at Austin
 //  Dagoberto Salazar - gAGE ( http://www.gage.es ). 2008, 2009, 2011
 //
 //============================================================================
 
+//============================================================================
+//
+//This software developed by Applied Research Laboratories at the University of
+//Texas at Austin, under contract to an agency or agencies within the U.S. 
+//Department of Defense. The U.S. Government retains all rights to use,
+//duplicate, distribute, disclose, or release this software. 
+//
+//Pursuant to DoD Directive 523024 
+//
+// DISTRIBUTION STATEMENT A: This software has been approved for public 
+//                           release, distribution is unlimited.
+//
+//=============================================================================
 
-#include <deque>
+/**
+ * @file SolverPPPMGEX.hpp
+ * Class to compute the PPP Solution.
+ */
+
+#ifndef GPSTK_SOLVERPPPMGEX_HPP
+#define GPSTK_SOLVERPPPMGEX_HPP
+
 #include "CodeKalmanSolver.hpp"
-
 
 namespace gpstk
 {
 
-      /** @addtogroup GPSsolutions */
-      /// @ingroup math
-
+      /// @ingroup GPSsolutions
       //@{
 
       /** This class computes the Precise Point Positioning (PPP) solution
@@ -219,11 +227,6 @@ namespace gpstk
           */
       SolverPPPMGEX(bool useNEU = false);
 
-			/**
-			 * Common constructor
-			 */ 
-      SolverPPPMGEX(bool useNEU, bool isbEGFlag );
-
 
          /** Compute the PPP Solution of the given equations set.
           *
@@ -272,7 +275,7 @@ namespace gpstk
           * @param gData    Data object holding the data.
           */
       virtual gnssSatTypeValue& Process(gnssSatTypeValue& gData)
-         throw(ProcessingException, SVNumException);
+         throw(ProcessingException);
 
 
          /** Returns a reference to a gnnsRinex object after solving
@@ -281,7 +284,7 @@ namespace gpstk
           * @param gData    Data object holding the data.
           */
       virtual gnssRinex& Process(gnssRinex& gData)
-         throw(ProcessingException, SVNumException);
+         throw(ProcessingException);
 
 
          /** Resets the PPP internal Kalman filter.
@@ -305,7 +308,6 @@ namespace gpstk
           *
           */
       virtual SolverPPPMGEX& setNEU( bool useNEU );
-
 
 
          /** Get the weight factor multiplying the phase measurements sigmas.
@@ -443,6 +445,18 @@ namespace gpstk
       { pBiasStoModel = pModel; return (*this); };
 
 
+         /** Returns the solution associated to a given TypeID.
+          *
+          * @param type    TypeID of the solution we are looking for.
+          */
+      virtual double getSolution(const TypeID& type) const
+         throw(InvalidRequest);
+
+
+			/// Set employed Satellite system set 
+      virtual SolverPPPMGEX& setSatSystems( SatSystemSet& satSys );
+
+
          /// Get the State Transition Matrix (phiMatrix)
       virtual Matrix<double> getPhiMatrix(void) const
       { return phiMatrix; };
@@ -479,81 +493,17 @@ namespace gpstk
       { qMatrix = pMatrix; return (*this); };
 
 
-          /** Set the positioning mode, kinematic or static.
-           */
+         /** Set the positioning mode, kinematic or static.
+          */
       virtual SolverPPPMGEX& setKinematic( bool kinematicMode = true,
                                        double sigmaX = 100.0,
                                        double sigmaY = 100.0,
                                        double sigmaZ = 100.0 );
 
-          /** Set buffer size for convergence statistics. 
-           */
-      virtual SolverPPPMGEX& setBufferSize(int size )
-      { bufferSize = size; return(*this); };
-
-
-          /** Set Galileo ISB flag. 
-           */
-      virtual SolverPPPMGEX& setGalileoISBFlag( bool flag )
-      { ISBEGFlag = flag; return(*this); };
-
-			/** Set restart interval.
-			 *
-			 *	@param interval    interval that restart the filter.
-			 */
-		virtual SolverPPPMGEX& setRestartInterval(double interval)
-		{
-			reIntialInterv = interval;
-			return (*this);
-		}
-
-			/** Set reinitialize flag
-			 *
-			 * @param interval    interval that restart the filter.
-			 */ 
-		virtual SolverPPPMGEX& setReInitializeFlag(bool reInit)
-		{
-			reInitialize = reInit;
-			return (*this);
-		}
-
-			/** Set standard precision
-			 *
-			 * @param interval    interval that restart the filter.
-			 */ 
-		virtual SolverPPPMGEX& setPrecisionStandard( double  standard )
-		{
-			precisionStandard = standard;
-			return (*this);
-		}
-
-
-
-         /** Return the converged flag
-          */
-      virtual bool getConverged() const
-         throw(InvalidRequest);
-
-      virtual std::vector<double> getTTFC() const
-      {
-          return ttfcVec;
-      }
-
-         /** Returns the solution associated to a given TypeID.
-          *
-          * @param type    TypeID of the solution we are looking for.
-          */
-      virtual double getSolution(const TypeID& type) const
-         throw(InvalidRequest);
-
-			/** Returns the start time vector
-			 *
-			 */
-		virtual std::vector<double> getSTime() const
-		{ return startTimeVec; }
 
          /// Returns an index identifying this object.
       virtual int getIndex(void) const;
+
 
          /// Returns a string identifying this object.
       virtual std::string getClassName(void) const;
@@ -566,15 +516,20 @@ namespace gpstk
    private:
 
 
-			/// standard precision for stistical knowledge
-		double precisionStandard;
+			/// Record input Sat system
+		SatSystemSet satSysSet;
 
-			/// ISB for flag for different sat system
-		bool ISBEGFlag;	/// < Between Galileo and GPS 
+			/// Multi system indicator
+		bool multiSys;
+
+			/// Glonass indicator, we need to consider this system seperately 
+		bool employR;
 
          /// Number of variables
       int numVar;
 
+         /// Number of ISB(inter system biases)
+      int numISB;
 
          /// Number of unknowns
       int numUnknowns;
@@ -584,35 +539,17 @@ namespace gpstk
       int numMeas;
 
 
-
          /// Weight factor for phase measurements
       double weightFactor;
 
 
-         /// Boolean flag to indicate reset the solution
-      bool resetSol;
-
-         /// Boolean to indicate whether the solution is converged
-      bool converged;
-
-         /// Size for convergBuffer
-      int bufferSize;
-
-      double startTime;
-
-      std::vector< double > ttfcVec;
-
-         /// Buffer to store the solution drou 
-      std::deque<bool> convergBuffer;
-
-			/// Time buffer related to convergBuffer
-		std::deque<double> convergedTimeBuffer;
-
          /// Pointer to stochastic model for dx (or dLat) coordinate
       StochasticModel* pCoordXStoModel;
 
+
          /// Pointer to stochastic model for dy (or dLon) coordinate
       StochasticModel* pCoordYStoModel;
+
 
          /// Pointer to stochastic model for dz (or dH) coordinate
       StochasticModel* pCoordZStoModel;
@@ -625,9 +562,9 @@ namespace gpstk
          /// Pointer to stochastic model for receiver clock
       StochasticModel* pClockStoModel;
 
+
          /// Pointer to stochastic model for ISB
       StochasticModel* pISBStoModel;
-
 
          /// Pointer to stochastic model for phase biases
       StochasticModel* pBiasStoModel;
@@ -660,24 +597,40 @@ namespace gpstk
          /// Set with all satellites being processed this epoch
       SatIDSet satSet;
 
-         /// Map to store the values of the ambiguity 
-      std::map<SatID, double> ambiguityMap;
 
          /// A structure used to store Kalman filter data.
       struct filterData
       {
             // Default constructor initializing the data in the structure
-         filterData() {};
+         filterData() : ambiguity(0.0) {};
 
+         double ambiguity;                  ///< Ambiguity value.
          std::map<TypeID, double> vCovMap;  ///< Variables covariance values.
          std::map<SatID,  double> aCovMap;  ///< Ambiguities covariance values.
+			std::map<SatID::SatelliteSystem, double> isbCovMap; /// ISB variable
+																				 /// for E and C
+			std::map<SatID, double > isbRCovMap;	/// ISB for Glonass
 
       };
 
+			/// A structure use to store Glonass sat ISB data 
+		struct filterData2
+		{
+				// Default constructor initializing the data in the structure
+			filterData2() : ISB(0.0) {};
+
+			double ISB;
+			std::map<SatID, double> isbRCovMap;   /// ISB for Glonass
+			std::map<SatID::SatelliteSystem, double> isbCovMap; /// ISB variable
+			std::map<TypeID, double> vCovMap;  ///< Variables covariance values.
+		};
+
 
          /// Map holding the information regarding every satellite
-      std::map<SatID, filterData> ambCovMap;
-
+      std::map<SatID, filterData> KalmanData;
+		
+			/// Map holding the Glonass ISB information
+		std::map<SatID, filterData2> ISBRKalmanData;
 
          /// General Kalman filter object
       SimpleKalmanFilter kFilter;
@@ -707,18 +660,6 @@ namespace gpstk
          /// Phase biases stochastic model (constant + white noise)
       PhaseAmbiguityModel biasModel;
 
-			/// Variable to indicate the first epoch
-		CommonTime firstEpoch;
-
-			/// Whether turn on the 'reInitialize' or not
-		bool reInitialize;
-
-			/// Interval to restart the filter
-		double reIntialInterv;
-
-			/// start time record
-		double stratTime;
-		std::vector< double > startTimeVec;
 
          // Some methods that we want to hide
          /// Initial index assigned to this class.
@@ -739,7 +680,7 @@ namespace gpstk
 
 
       virtual SolverPPPMGEX& setDefaultEqDefinition(
-                                       const gnssEquationDefinition& eqDef )
+         const gnssEquationDefinition& eqDef )
       { return (*this); };
 
 
