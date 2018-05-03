@@ -199,25 +199,25 @@ namespace gpstk
 																epochflag, satTimeDiffData ); 
 				if( useTimeDifferencedLI )
 				{
-					try
-					{
-							// An initialization process is needed 
-						TypeIDSet& tySet = sysLITypes(sat.system);
-						const TypeID& liType = *(tySet.begin());
-
-						TypeID type( liType.ConvertToTimeDiffType(1));
-						size_t s( satLIDataDeque(sat)(type).size() );
-
-						if( s < minBufferSize )
-						{
-							satTimeDiffData.removeSatID(sat);
-						} // End of ' if( s < minBufferSize ) '
-					}
-					catch( ... )
-					{
-							// Just continue 
-						continue;
-					}  
+//					try
+//					{
+//							// An initialization process is needed 
+//						TypeIDSet& tySet = sysLITypes(sat.system);
+//						const TypeID& liType = *(tySet.begin());
+//
+//						TypeID type( liType.ConvertToTimeDiffType(1));
+//						size_t s( satLIDataDeque(sat)(type).size() );
+//
+//						if( s < minBufferSize )
+//						{
+//							satTimeDiffData.removeSatID(sat);
+//						} // End of ' if( s < minBufferSize ) '
+//					}
+//					catch( ... )
+//					{
+//							// Just continue 
+//						continue;
+//					}  
 
 				} // End of ' if( useTimeDifferencedLI ) '
 
@@ -236,40 +236,12 @@ namespace gpstk
 					// *** Now, GPS L1, L2; Galileo E1, E5a
 				Vector<double> cycleSlipVec;
 				Matrix<double> cycleSlipCov;
-//				Vector<double> cycleSlipVec( 2*numOfSats, 0.0 );
-//				Matrix<double> cycleSlipCov( 2*numOfSats, 2*numOfSats, 0.0 );
 
-				
 				std::cout << "model time-diff data" << std::endl;
+//				modelTimeDifferencedData( satTimeDiffData, gData, cycleSlipVec, cycleSlipCov );
 
-				modelTimeDifferencedData( satTimeDiffData, gData, cycleSlipVec, cycleSlipCov );
-
-				std::cout << "fix cycle slips" << std::endl;
-					// Fix the float cycle-slip estimates
-					// MLAMBDA  
-				ARMLambda mlambda;	
-
-					// Resolve
-				mlambda.resolve(cycleSlipVec, cycleSlipCov);
-
-					// Compute IB Success Rate
-				SuccessRate sr( cycleSlipCov );
-				SR = sr.getSuccessRate();
-
-				if( SR > 0.9 )
-				{
-					size_t s( cycleSlipVec.size() );
-					for( size_t i=0; i<s; i++ )
-					{
-						std::cout << ambColSat[i] << " fixed CS value: "
-							 << mlambda.getFixedAmbVec()(i) << std::endl;
-					} // End of ' for( size_t i=0; i<s; i++ ) '
-				}
-				else{
-				
-					std::cout << " No CSR" << std::endl;
-				
-				} // End of 'if( SR > 0.9 )'
+//				std::cout << "fix cycle slips" << std::endl;
+//				cycleSlipResolution( cycleSlipVec, cycleSlipCov, gData );
 
 			}   
 			else
@@ -581,13 +553,14 @@ namespace gpstk
 
 			// Num of measurements
 			// phase, code and pseudo-ionospheric observables 
-		size_t numMeas( numOfElements + numOfSats );
+		size_t numIonoObs( ionoWeighted ? numOfSats : 0 )
+		size_t numMeas( numOfElements + numIonoObs );
 
 			// Num of unknowns, also the same order in the time-diff equation 
 			// 3				receiver coordinate displacements(if it is moving)
 			// 1				receiver clock offset variation 
 			// numOfSats   ionospheric delay variation on the first frequency
-			//					e.g. L1 for GPS 
+			//					e.g. L1 for GPS  
 			// numOfSats*n cycle-slip parameters, n is the number of frequency     
 
 		size_t numCoorVar( (staticReceiver?0:3) );
@@ -750,7 +723,7 @@ namespace gpstk
 						getWavelength( sat, band );
 
 						// Record the Ambiguity index
-					ambColSat[ acPhaseFreqNum+bandIndex ] = sat;
+					ambColSat[ acPhaseFreqNum+bandIndex ][sat] = type;
 				}
 				else if( roi.type == ObsID::otRange )
 				{
@@ -771,54 +744,61 @@ namespace gpstk
 			}   // End of 'for( TypeIDSet::const_iterator itObsTypes ... '
 
 
-				// Add virtual measurement of ionospheric delay variation
-			if( useTimeDifferencedLI )
+				// Add pseudo measurement of ionospheric delay variation
+			if( ionoWeighted )
 			{
-				double ion(0.0), value(0.0), ionVar(1.0), var(1.0);
+				if( useTimeDifferencedLI )
+				{
+					double ion(0.0), value(0.0), ionVar(1.0), var(1.0);
+	
+						// Pick one LI type from sysLiTypes, the first one by default
+					TypeIDSet liTypes( sysLITypes(sat.system) );
+					TypeID type( *(liTypes.begin()));
+	
+						// Get band
+					int b1( GetLITypeCarrierBand( type, 1 ) );
+					int b2( GetLITypeCarrierBand( type, 2 ) );
+	
+						// Get miu 
+					double miu1( getMiu(sat.system, b1) );
+					double miu2( getMiu(sat.system, b2) );
+	
+					//std::cout << sat << " " <<  type <<  " b1: " << b1 << " b2: " << b2 
+					//				<< " miu1: " << miu1 << " miu2: " << miu2 << std::endl; 
+						// Convert type to differential form 
+					TypeID dLI( type.ConvertToTimeDiffType(1) );
+	
+					getSmoothDeltaLI( sat, dLI, value, var );
+	
+						// Compute deltaLI and its variance
+					ion = value/(miu2-miu1);
+					ionVar = var/((miu2-miu1)*(miu2-miu1));
+	
+					rMatrix( i, i ) = unitWeightStd*unitWeightStd/ionVar;
+	
+					std::cout << sat << " " <<  type << " ion: " << ion << "iStd: " << std::sqrt(ionVar) << std::endl;
+				}
+				else
+				{
+						// Empirical value
+					y(i) = 0;
+					double ionoWeight( unitWeightStd/(0.05) );
+					rMatrix( i, i ) = ionoWeight*ionoWeight;
+				} // End of 'if( useTimeDifferencedLI )'
+	
+					// Only one coefficient for this virtual obs  
+				hMatrix( i, numCoorVar+1+j ) = 1.0;
 
-					// Pick one LI type from sysLiTypes, the first one by default
-				TypeIDSet liTypes( sysLITypes(sat.system) );
-				TypeID type( *(liTypes.begin()));
+				i++;   // Donot forget increment for the row!!! 
 
-					// Get band
-				int b1( GetLITypeCarrierBand( type, 1 ) );
-				int b2( GetLITypeCarrierBand( type, 2 ) );
+					// Record this row 
+				rowSat[i] = sat;
 
-					// Get miu 
-				double miu1( getMiu(sat.system, b1) );
-				double miu2( getMiu(sat.system, b2) );
-
-				//std::cout << sat << " " <<  type <<  " b1: " << b1 << " b2: " << b2 
-				//				<< " miu1: " << miu1 << " miu2: " << miu2 << std::endl; 
-					// Convert type to differential form 
-				TypeID dLI( type.ConvertToTimeDiffType(1) );
-
-				getSmoothDeltaLI( sat, dLI, value, var );
-
-					// Compute deltaLI and its variance
-				ion = value/(miu2-miu1);
-				ionVar = var/((miu2-miu1)*(miu2-miu1));
-
-				rMatrix( i, i ) = unitWeightStd*unitWeightStd/ionVar;
-
-				std::cout << sat << " " <<  type << " ion: " << ion << "iStd: " << std::sqrt(ionVar) << std::endl;
-			}
-			else
-			{
-					// Empirical value
-				y(i) = 0;
-				double ionoWeight( unitWeightStd/(0.05) );
-				rMatrix( i, i ) = ionoWeight*ionoWeight;
-			}
-
-				// Only one coefficient for this virtual obs  
-			hMatrix( i, numCoorVar+1+j ) = 1.0;
+			} // End of 'if( ionoWeighted )'
 				
-				// Record this row 
-			rowSat[i] = sat;
 
 				// Preparation for next sat
-			i++;   // Donot forget!!! 
+//			i++;   // Donot forget!!! 
 			j++;
 
 				// Increment of acPhaseFreqNum
@@ -1260,10 +1240,90 @@ namespace gpstk
 			Exception e( StringUtils::asString(sat) + "not found or any other problem" );
 			GPSTK_THROW(e);
 		}
+	} // End of 'void CycleSlipEstimator::getSmoothDeltaLI( ... ' 
 
 
-	} 
+
+			/** Cycle slip resolution
+			 *
+			 * @param csVec	I float estimates of cycle slip
+			 * @param csCov   I
+			 * @param gData   I/O
+			 *
+			 */
+	void CycleSlipEstimator::cycleSlipResolution( Vector<double>& csVec, 
+																 Matrix<double>& csCov, 
+																 satTypeValueMap& gData )
+	{
+
+		try
+		{
+				// Fix the float cycle-slip estimates
+				// MLAMBDA  
+			ARMLambda mlambda;	
+	
+				// Resolve
+			mlambda.resolve(csVec, csCov);
+	
+				// Fixed Solution 
+			Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
+	
+				// Compute IB Success Rate
+			SuccessRate sr( csCov );
+			SR = sr.getSuccessRate();
+	
+			if( SR > 1 )
+			{
+				size_t s( csVec.size() );
+				for( size_t i=0; i<s; i++ )
+				{
+					std::map< SatID, TypeID >::const_iterator itSatType = 
+																			ambColSat[i].begin();
+					for(; itSatType != ambColSat[i].end(); ++itSatType )
+					{
+						SatID sat( itSatType -> first );
+						
+							// Phase Obs TypeID e.g. prefitL1
+						TypeID phaseType( itSatType -> second );
+	
+						double fixedVal( fixedCSVec(i) );
+	
+							// Convert phase TypeID to RinexObsID to get the band info
+						RinexObsID roi( phaseType.ConvertToRinexObsID(sat.system) );
+	
+						int band( GetCarrierBand(roi) );
+	
+							// Make cycle slip correction
+						TypeID resultType( ConvertToTypeID(roi, sat) );
+//						gData(sat)(resultType) += getWavelength(sat, band)*fixedVal;
+
+						if( resultType == TypeID::L1 )
+						{
+							if( fixedVal != 0 )
+							{
+								gData(sat)[TypeID::CSL1] = 1;
+								gData(sat)[TypeID::CSL2] = 1;
+							}
+						}
+	
+						std::cout << sat << " " << phaseType << " fixed CS Value: "<< fixedCSVec(i) << std::endl;
+	
+					} // End of 'for(; itSatType != ambColSat[i].end(); ++itSatType )'
+	
+				} // End of ' for( size_t i=0; i<s; i++ ) '
+		}
+		else{
 		
+			std::cout << " No CSR" << std::endl;
+		
+		} // End of 'if( SR > 0.9 )'
+		}
+		catch( Exception& e )
+		{
+			GPSTK_THROW( e );
+		}
+
+	} // End of ' void CycleSlipEstimator::cycleSlipResolution( ... '
 
 
 

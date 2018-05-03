@@ -90,7 +90,8 @@ namespace gpstk
 									  const TypeIDSet& usrObsTypes )
 										 : staticReceiver(true), deltaTMax(61.0),
 											SR(0.0), useTimeDifferencedLI(false),
-											dLI(0), dLIStd(0.1), maxBufferSize(12)
+											dLI(0), dLIStd(0.1), maxBufferSize(12),
+											ionoWeighted(false)
 			{
 					// Insert this sys<---> obsTypes pair 	
 				sysObsTypes[usrSys] = usrObsTypes;
@@ -164,6 +165,10 @@ namespace gpstk
 		virtual double& getSatLITimeDiffData( const SatID& sat,
 														  const TypeID& type )
 		{ return satLITimeDiffData(sat)(type); }
+
+			/// Get LI time-diff map 
+		virtual satTypeValueMap getSatLITTimeDiffMap()
+		{ return satLITimeDiffData; }
 
 
 			/// Set using info of time-differenced LI 
@@ -253,6 +258,8 @@ namespace gpstk
 
 		private:
 
+			bool ionoWeighted;
+
 				/// Sat sys 
 //			SatID::SatelliteSystem sys;
 
@@ -294,7 +301,7 @@ namespace gpstk
 
 				/// sat index recorder in the defined time-differenced model 
 			std::map< int, SatID > rowSat;
-			std::map< int, SatID > ambColSat;
+			std::map< int, std::map< SatID, TypeID > > ambColSat;
 			std::map< int, SatID > ionColSat;
 
 				/// Handy clear function 
@@ -424,6 +431,18 @@ namespace gpstk
 																  satTypeValueMap& stvm,
 																  Vector<double>& csVec, 
 																  Matrix<double>& csCov );
+
+			/** Cycle slip resolution
+			 *
+			 * @param csVec	I float estimates of cycle slip
+			 * @param csCov   I
+			 * @param gData   I/O
+			 *
+			 */
+		virtual void cycleSlipResolution( Vector<double>& csVec, 
+							  					    Matrix<double>& csCov, 
+											       satTypeValueMap& gData );
+
 
 
 	};   // End of class declaration
