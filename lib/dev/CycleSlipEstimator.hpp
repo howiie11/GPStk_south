@@ -89,9 +89,10 @@ namespace gpstk
 			CycleSlipEstimator( const SatID::SatelliteSystem& usrSys,
 									  const TypeIDSet& usrObsTypes )
 										 : staticReceiver(true), deltaTMax(61.0),
-											SR(0.0), useTimeDifferencedLI(false),
+											SR(0.0), ratio(0.0), useTimeDifferencedLI(false),
 											dLI(0), dLIStd(0.1), maxBufferSize(12),
-											ionoWeighted(false)
+											correctCS(false),
+											ionoWeighted(false), SuccessRateThreshold(0.988)
 			{
 					// Insert this sys<---> obsTypes pair 	
 				sysObsTypes[usrSys] = usrObsTypes;
@@ -175,6 +176,14 @@ namespace gpstk
 		virtual CycleSlipEstimator& useTimeDiffLI( bool use )
 		{ useTimeDifferencedLI = use; return (*this); };
 
+			/// Correct cycle slip
+		virtual CycleSlipEstimator& correctCycleSlip( bool resolve )
+		{ correctCS = resolve; return (*this); };
+
+			/// Set ionosphere weighted 
+		virtual CycleSlipEstimator& setIonoWeighted( bool use )
+		{ ionoWeighted = use; return (*this); };
+
 			/** Set LI  types  
 			 *
 			 * @param sys			sat systems 
@@ -224,6 +233,10 @@ namespace gpstk
 		virtual double getSuccessRate()
 		{ return SR; }
 
+			/// Get ratio
+		virtual double getRatio()
+		{ return ratio; }
+
 			/// Set max window size of satTimeLIDeque 
 		virtual CycleSlipEstimator& setMaxBufferSize(const int& maxBufSize);
 
@@ -247,7 +260,15 @@ namespace gpstk
 			 * @param type
 			 * 
 			 */
-		virtual double getPostfitResidual( SatID sat, TypeID type );
+		virtual double getSatPostfitResidual( SatID sat, TypeID type );
+
+			/* Get sat fixed integer cycle slip
+			 *
+			 * @param type		e.g.prefitL1
+			 *
+			 */
+		virtual double getSatFixedCS( SatID sat, TypeID type )
+		{ return satFixedCS(sat)(type); }
 			
 			/// Return 'satPostfitResiduals'
 //		virtual satTypeValueMap satPostfitResiduals; 
@@ -258,7 +279,14 @@ namespace gpstk
 
 		private:
 
+				/// Cycle slip correction flag
+			bool correctCS;
+
+				/// indicator of a ionosphere weighted model
 			bool ionoWeighted;
+
+				/// SuccessRateThreshold
+			double SuccessRateThreshold;
 
 				/// Sat sys 
 //			SatID::SatelliteSystem sys;
@@ -277,7 +305,7 @@ namespace gpstk
 					/// given sys and ot
 				std::set<int>& operator()( const SatID::SatelliteSystem sys, 
 													const ObsID::ObservationType ot )
-					throw( ValueNotFound ); 
+					throw( SatIDNotFound, ValueNotFound ); 
 					/// Destructor 
 				virtual ~SysObsTypeSet() {};
 			};
@@ -300,8 +328,8 @@ namespace gpstk
 			SysTypeIDSetMap sysLITypes;
 
 				/// sat index recorder in the defined time-differenced model 
-			std::map< int, SatID > rowSat;
-			std::map< int, std::map< SatID, TypeID > > ambColSat;
+			std::map< int, std::pair<SatID, TypeID> > rowSat;
+			std::map< int, std::pair< SatID, TypeID > > ambColSat;
 			std::map< int, SatID > ionColSat;
 
 				/// Handy clear function 
@@ -316,6 +344,9 @@ namespace gpstk
 
 				/// SuccessRate 
 			double SR;
+
+				/// Ratio 
+			double ratio;
 
 				/// deltaLI and its std
 			double dLI, dLIStd;
@@ -388,8 +419,10 @@ namespace gpstk
 
 //				/// postfit residuals 
 //			satTypeValueMap satPostfitRes;
-			Vector<double> postfitResiduals;
+//			Vector<double> postfitResiduals;
+			Matrix<double> postfitResiduals;
 			satTypeValueMap satPostfitResiduals;
+			satTypeValueMap satFixedCS;
 
 				/// Struct to store sat data of former epoch
 			satEpochTypeValueMap satFormerData;
