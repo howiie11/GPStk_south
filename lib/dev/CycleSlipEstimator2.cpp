@@ -786,6 +786,7 @@ namespace gpstk
 			
 			// Row index
 		size_t i(0);
+		size_t rowDecrement(0);
 
 			// sat index  
 		size_t j(0);
@@ -812,8 +813,34 @@ namespace gpstk
 				  itObsTypes != obsTypes.end(); 
 				  ++itObsTypes )
 			{
+
 					// Code TypeID 
 				TypeID type( *itObsTypes );
+
+					// Convert to RinexObsID 
+					// Check the MW CS first
+				RinexObsID roi( type.ConvertToRinexObsID(sys) );
+				if( roi.type == ObsID::otPhase )
+				{
+					try
+					{
+						double csL1( stvm(sat)(TypeID::CSL1) );
+
+						std::cout << sat << " type= " << type <<  " CSL1: "  << csL1 << std::endl;
+							
+							// Discard phase data from sat with MW CS 
+						if( csL1 != 0.0 ) 
+						{
+							++rowDecrement;
+							continue; 
+						}
+					}
+					catch( TypeIDNotFound& e )
+					{
+						Exception u( getClassName() + e.what() );
+						GPSTK_THROW(u);
+					}
+				} // End of 'if( roi.type == ObsID::otPhase )'
 
 				// debug code vvv
 //				std::cout << "type= " << type << std::endl;
@@ -847,7 +874,7 @@ namespace gpstk
 					// Coefficients for the variation of iono delay and possible
 					// cycle slips, j indicates the sat index
 				//RinexObsType rot( type.ConvertToRinexObsType(SatID::systemGPS) );
-				RinexObsID roi( type.ConvertToRinexObsID(sys) );
+				//RinexObsID roi( type.ConvertToRinexObsID(sys) );
 
 					// 'GetCarrierBand' is defined in the file 'TypeID.hpp'
 					// but not a member function of TypeID class  
@@ -872,10 +899,11 @@ namespace gpstk
 					{
 						hMatrix( i, numCoorVar+1+numOfSats+acPhaseFreqNum+bandIndex ) = 
 							getWavelength( sat, band );
+
+							// Record the Ambiguity index
+						ambColSat[ acPhaseFreqNum+bandIndex ] = std::make_pair(sat, type);
 					} 
 
-						// Record the Ambiguity index
-					ambColSat[ acPhaseFreqNum+bandIndex ] = std::make_pair(sat, type);
 				}
 				else if( roi.type == ObsID::otRange )
 				{
@@ -978,8 +1006,8 @@ namespace gpstk
 
 
 		// debug code vvv
-		std::cout << "hMatrix: " << std::endl;
-		std::cout << hMatrix << std::endl;
+//		std::cout << "hMatrix: " << std::endl;
+//		std::cout << hMatrix << std::endl;
 	//	exit(-1);
 //		std::cout << "j: " << j << std::endl;
 		// debug code ^^^
@@ -988,6 +1016,17 @@ namespace gpstk
 		
 		if( !phaseOnly ) // For cases: cose, and code+phase
 		{
+
+				// Resize 'y', 'hMatrix' and 'rMatrix'
+			if( rowDecrement != 0 )
+			{
+				std::cout << "rowDecrement: " << rowDecrement << std::endl;
+				rows -= rowDecrement;
+				y = gpstk::Vector<double>( y, 0, rows );
+				hMatrix = gpstk::Matrix<double>( hMatrix, 0, 0, rows, columns );
+				rMatrix = gpstk::Matrix<double>( rMatrix, 0, 0, rows, rows );
+			} // End of 'if( rowDecrement != 0 )'
+
 				// Adopt LMS solver, no priori info
 			SolverWMS solver;
 			solver.Compute( y, hMatrix, rMatrix );
@@ -1152,7 +1191,7 @@ namespace gpstk
 					// Convert to rinex obs type 
 				RinexObsID roi( type.ConvertToRinexObsID( sat.system ) );
 //				if( roi.type == ObsID::otRange )
-				{
+//				{
 					double normRes( post/( sigma0hat* std::sqrt( Qvv(i,i) ) ) );
 					codeNormRes(k) = normRes;
 	
@@ -1164,25 +1203,47 @@ namespace gpstk
 					
 					std::cout <<  sat << " " << type << " normRes: " << normRes <<  " uppreTail: " << upperTailPro  << std::endl;
 	
+						// Judge code blunder test or CS detection
+					if( codeOnly && !phaseOnly  ) // Code Blunder test
+					{
+						if( upperTailPro < normalTestAlpha )
+						{
+							badSatSet.insert(sat);
+						}
+
+					}
+					else if( !codeOnly && !phaseOnly && !estCS ) // CS detection 
+					{
+						if( type == TypeID::prefitL1 || type == TypeID::prefitL2 )
+						{
+							if( upperTailPro < normalTestAlpha )
+							{
+									// CS occurred 
+									std::cout << sat << "CS occurred" << std::endl;
+									stvm(sat)[TypeID::CSL1] = 1.0;
+									stvm(sat)[TypeID::CSL2] = 1.0;
+
+									badSatSet.insert(sat);
+							}
+							else{
+								stvm(sat)[TypeID::CSL1] = 0.0;
+								stvm(sat)[TypeID::CSL2] = 0.0;
+							} // End of 'if( upperTailPro < normalTestAlpha ) '
+
+						} // End of 'if( type == TypeID::prefitL1 ... '
+
+					}
+//					else{  // do nothing, just estimating CS 
+//					}
+
+
+
 //					if( upperTailPro < 0.0079 )
-					if( upperTailPro < normalTestAlpha )
+//					if( upperTailPro < normalTestAlpha )
 //					if( upperTailPro < 0.0012 ) // iono weighted
 					//if( std::abs(normRes) > t[df-1] )
-					{
-						if( !codeOnly && !estCS ) // CS detection
-						{
-								// Insert CS 
-							if(type == prefitL1 )
-							{
-								stvm(sat)[TypeID::CSL1] = 1.0;	
-							}
-
-						} // End of 'if( !codeOnly && !estCS ) // CS detection'
-							// Code Blunder
-						badSatSet.insert(sat);
-					}  // End of 'if( upperTailPro < 0.05 ) '
 					k++;
-				} // End of 'if( roi.type == ObsID::otRange ) '
+//				} // End of 'if( roi.type == ObsID::otRange ) '
 	
 			} // End of 'for( size_t i=0; i<rows; i++ )'
 //		} // End of 'if( codeOnly )'
@@ -2005,17 +2066,23 @@ namespace gpstk
 													satTypeValueMap& gData )
 		{
 
-			bool codeOnly(false);
-			bool phaseOnly(false);
-			modelTimeDifferencedData( codeOnly, phaseOnly, satTimeDiffData, gData, false );
-			exit(-1);
+//			for( int iteration=0; iteration<100; ++iteration )
+			while(1)
+			{
+				SatIDSet tmpSats;
+				bool codeOnly(false);
+				bool phaseOnly(false);
+				tmpSats	= modelTimeDifferencedData( codeOnly, phaseOnly, satTimeDiffData, gData, false );
+				
+					// No cs sat is marked
+				if( tmpSats.empty() ) break; 
 
+					// Remove 'tempBadSats' from 'satTimeDiffData'
+				satTimeDiffData.removeSatID( tmpSats );
+				
+			} // End of 'for( int iteration=0; iteration<100; ++iteration )'
 
 		} // End of 'virtual void CycleSlipEstimator2::integratedDetection( ... '
-
-
-
-
 
 
 			/** Hypothesis of Normalised residual
