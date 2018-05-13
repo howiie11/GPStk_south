@@ -588,7 +588,7 @@ namespace gpstk
 		/** Integrated detection 
 		 * 
 		 * @param satTimeDiffData
-		 * @param gData
+		 * @param gData					# GDS
 		 *
 		 */ 
 		virtual void integratedDetection( satTypeValueMap& satTimeDiffData, 
