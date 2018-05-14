@@ -338,15 +338,15 @@ namespace gpstk
 				gData.removeSatID( badSats );
 
 					// Detect cycle slip
-//				std::cout << "detect cycle slips" << std::endl;
+				std::cout << "detect cycle slips" << std::endl;
 				cycleSlipDetection( satTimeDiffData, gData );
 
-//				std::cout << "fix cycle slips" << std::endl;
-//				if( correctCS )
-//				{
-//						// Correct cycle slip 
-//					cycleSlipResolution( cycleSlipVec, cycleSlipCov, gData );
-//				} // End of 'if( correctCS )'
+				if( correctCS )
+				{
+					std::cout << "fix cycle slips" << std::endl;
+						// Correct cycle slip 
+					cycleSlipResolution( satTimeDiffData, gData );
+				} // End of 'if( correctCS )'
 			}   
 			else
 			{
@@ -672,7 +672,7 @@ namespace gpstk
 		size_t numOfSats( obsData.numSats() );
 
 		// debug code vvv
-		std::cout << "numOfSats: " << numOfSats << std::endl;
+//		std::cout << "numOfSats: " << numOfSats << std::endl;
 		// debug code ^^^ 
 
 
@@ -684,7 +684,7 @@ namespace gpstk
 //		validSatSet = satTimeDiffData.getSatID();
 
 		// debug code vvv
-		std::cout << "numOfElements: " << numOfElements << std::endl;
+//		std::cout << "numOfElements: " << numOfElements << std::endl;
 		// debug code ^^^ 
 
 
@@ -750,8 +750,8 @@ namespace gpstk
 		}  // End of ' if( !codeOnly ) '
 
 		// debug code vvv
-		std::cout << "numOfSats: " << numOfSats << " numUnknowns: " 
-						<< numUnknowns << " numAmbUnknowns: " << numAmbUnknowns << std::endl;
+//		std::cout << "numOfSats: " << numOfSats << " numUnknowns: " 
+//						<< numUnknowns << " numAmbUnknowns: " << numAmbUnknowns << std::endl;
 		// debug code ^^^ 
 
 			// Resize csVec and csCov
@@ -762,7 +762,7 @@ namespace gpstk
 		size_t rows( numMeas ), columns( numUnknowns );
 
 		// debug code vvv
-		std::cout << "rows and columns: " << rows << " " << columns  << std::endl;
+//		std::cout << "rows and columns: " << rows << " " << columns  << std::endl;
 		// debug code ^^^ 
 			// Measurement vector
 		Vector<double> y( rows, 0.0 );
@@ -817,6 +817,8 @@ namespace gpstk
 					// Code TypeID 
 				TypeID type( *itObsTypes );
 
+
+					// Judge whether to discard the phase observable of this sat
 					// Convert to RinexObsID 
 					// Check the MW CS first
 				RinexObsID roi( type.ConvertToRinexObsID(sys) );
@@ -824,12 +826,14 @@ namespace gpstk
 				{
 					try
 					{
-						double csL1( stvm(sat)(TypeID::CSL1) );
+						double cs(0.0);
 
-						std::cout << sat << " type= " << type <<  " CSL1: "  << csL1 << std::endl;
-							
-							// Discard phase data from sat with MW CS 
-						if( csL1 != 0.0 ) 
+						TypeID csType( type.ConvertToCSTypeID() ); 	
+						cs = stvm(sat)(csType);
+
+//						std::cout << sat << " type= " << type <<  " csType: "  << cs << std::endl;
+							// Discard phase data from sat with CS 
+						if( cs != 0.0 ) 
 						{
 							++rowDecrement;
 							continue; 
@@ -837,8 +841,11 @@ namespace gpstk
 					}
 					catch( TypeIDNotFound& e )
 					{
-						Exception u( getClassName() + e.what() );
-						GPSTK_THROW(u);
+							// Here means that this sat has no CS flag
+							// Just go on 
+							// This is not an error
+//						Exception u( getClassName() + e.what() );
+//						GPSTK_THROW(u);
 					}
 				} // End of 'if( roi.type == ObsID::otPhase )'
 
@@ -1020,7 +1027,7 @@ namespace gpstk
 				// Resize 'y', 'hMatrix' and 'rMatrix'
 			if( rowDecrement != 0 )
 			{
-				std::cout << "rowDecrement: " << rowDecrement << std::endl;
+//				std::cout << "rowDecrement: " << rowDecrement << std::endl;
 				rows -= rowDecrement;
 				y = gpstk::Vector<double>( y, 0, rows );
 				hMatrix = gpstk::Matrix<double>( hMatrix, 0, 0, rows, columns );
@@ -1136,8 +1143,8 @@ namespace gpstk
 		sigma0hat = std::sqrt( vTpv(0,0) / df );
 
 		// debug code vvv
-		std::cout << "sigma0: " << unitWeightStd << std::endl;
-		std::cout << "sigma0hat: " << sigma0hat << std::endl;
+//		std::cout << "sigma0: " << unitWeightStd << std::endl;
+//		std::cout << "sigma0hat: " << sigma0hat << std::endl;
 		// debug code ^^^
 
 //			// Examination of the variance factor 
@@ -1201,7 +1208,7 @@ namespace gpstk
 					//double upperTailPro( normal.Q( std::abs( normRes ) ) );
 					double upperTailPro( stuObj.Q( std::abs( normRes ), df ) );
 					
-					std::cout <<  sat << " " << type << " normRes: " << normRes <<  " uppreTail: " << upperTailPro  << std::endl;
+					//std::cout <<  sat << " " << type << " normRes: " << normRes <<  " uppreTail: " << upperTailPro  << std::endl;
 	
 						// Judge code blunder test or CS detection
 					if( codeOnly && !phaseOnly  ) // Code Blunder test
@@ -1214,20 +1221,21 @@ namespace gpstk
 					}
 					else if( !codeOnly && !phaseOnly && !estCS ) // CS detection 
 					{
-						if( type == TypeID::prefitL1 || type == TypeID::prefitL2 )
+						if( roi.type == ObsID::otPhase  )
 						{
+							TypeID csType( type.ConvertToCSTypeID() );	
+						
 							if( upperTailPro < normalTestAlpha )
 							{
 									// CS occurred 
-									std::cout << sat << "CS occurred" << std::endl;
-									stvm(sat)[TypeID::CSL1] = 1.0;
-									stvm(sat)[TypeID::CSL2] = 1.0;
-
-									badSatSet.insert(sat);
+//								std::cout << sat << " CS occurred" << std::endl;
+									
+								stvm(sat)[csType] = 1.0;
+									
+								badSatSet.insert(sat);
 							}
 							else{
-								stvm(sat)[TypeID::CSL1] = 0.0;
-								stvm(sat)[TypeID::CSL2] = 0.0;
+								stvm(sat)[csType] = 0.0;
 							} // End of 'if( upperTailPro < normalTestAlpha ) '
 
 						} // End of 'if( type == TypeID::prefitL1 ... '
@@ -1596,6 +1604,192 @@ namespace gpstk
 	} // End of 'void CycleSlipEstimator2::getSmoothDeltaLI( ... ' 
 
 
+		/** Sat by sat CS resolution
+		 * 
+		 *	Note: This method should be used after 'integratedDetection'	
+		 *
+		 * @param satTimeDiffData
+		 *	@param gData 
+		 *
+		 */
+	void CycleSlipEstimator2::satBySatResolution( satTypeValueMap& satTimeDiffData,
+																 satTypeValueMap& gData )
+	{
+
+		size_t satsNum( satTimeDiffData.numSats() );
+			// Loop through 'CSSatSet'
+		for( SatIDSet::iterator itSat = CSSatSet.begin(); 
+			  itSat != CSSatSet.end(); 
+			  ++itSat )
+		{
+
+			SatID sat( *itSat );
+			std::cout << sat << std::endl;
+
+				// Phase types of this sat  
+			TypeIDSet phaseTypes( sysPhaseObsTypes(sat.system) );
+
+			size_t numPhaseTypes(phaseTypes.size());
+
+
+				// sat index in solution Vector
+				// Get the index of the given sat and band in 'ionColSat'
+			size_t index(0);
+			for(; index<satsNum; index++)
+			{
+				SatID satIonCol( ionColSat[index] );
+
+					// If found
+				if( satIonCol == sat ) break;
+			} // End of 'for( int i=0; i<rows; i++)'
+
+				// The sat index in 'x'
+			size_t in( numCoorVar + 1 + index );
+
+			Vector<double> ybar(numPhaseTypes, 0);
+			Vector<double> phaseVec(numPhaseTypes, 0);
+			Matrix<double> Qybar(numPhaseTypes, numPhaseTypes, 0.0);
+			Matrix<double> Qphase(numPhaseTypes, numPhaseTypes, 0.0);
+			Matrix<double> hMatrix(numPhaseTypes, numPhaseTypes, 0.0);
+
+				// 'A' matrix of this sat
+			Matrix<double> A( numPhaseTypes, numCoorVar+1+1, 0.0 );
+			Vector<double> x( numCoorVar+1+1, 0.0 );
+			Matrix<double> Qx( numCoorVar+1+1, numCoorVar+1+1, 0.0 );
+
+				// Row index
+			int i(0);
+			
+			for( TypeIDSet::const_iterator itTypes = phaseTypes.begin(); 
+				  itTypes != phaseTypes.end(); 
+				  ++itTypes )
+			{
+				TypeID pType( *itTypes );
+				std::cout << "Phase Type: " << pType << std::endl;
+
+				try
+				{
+						// Phase observable of 'sat'
+					double phase( satTimeDiffData(sat)(pType) );
+
+						// Get the current band 
+					RinexObsID roi( pType.ConvertToRinexObsID(sat.system) );
+					int band( GetCarrierBand( roi ) );
+					double miu( getMiu( sat.system, band ) );
+
+						// ***Fill matrix A 
+					if( !staticReceiver )
+					{
+							// Coefficients for the coordinate displacement deltadx/y/z
+							// but here is an approximation:
+						A(i, 0) = gData(sat)(TypeID::dx); 
+						A(i, 1) = gData(sat)(TypeID::dy); 
+						A(i, 2) = gData(sat)(TypeID::dz); 
+					} 
+
+						// Coefficients for the variation of receiver clock 
+					A( i, numCoorVar ) = 1.0;
+
+						// *** iono coefficient
+					A( i, numCoorVar + 1 ) = -1 * miu;
+
+						// hMatrix, only ambiguity term
+					hMatrix( i, i ) = getWavelength( sat, band );  
+
+				
+						// Assignment 
+					std::cout << "phase: " << phase << std::endl;
+					phaseVec(i) = phase;
+
+						// zenith weight
+					double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, 
+												 TypeID::prefitPC ) );
+					double phaseStd( obsStd.getGNSSObsSTD(sat.system, pType) );
+					double q( phaseStd/unitWeightStd );
+					q *= q;
+					
+					Qphase( i, i ) = q/satTimeDiffData(sat)(TypeID::weight);
+
+				}
+				catch( ... )
+				{
+					Exception e(getClassName() + ": error in satBySatDetection()");
+				} 
+				
+					// Increment of i
+				i++;
+
+			} // End of ' for( TypeID::const_iterator itTypes =  ... '
+
+			//std::cout << "Qphase" << std::endl;
+			//std::cout << Qphase << std::endl;
+
+			std::cout << "martix A" << std::endl;
+			std::cout << A << std::endl;
+
+
+				// Get Qx and x 
+			for( i=0; i<numCoorVar+1; i++ )
+			{
+				x(i) = solution(i);
+
+					// First part: coor and clock
+				for( int j=0; j<numCoorVar+1; j++)
+				{
+					Qx( i, j ) = covMatrix(i, j); 
+				} // End of 'for( int j=0; j<numCoorVar+1+1; j++)'
+
+					// Second part iono
+				Qx( i, numCoorVar+1 ) = Qx( numCoorVar+1, i ) = covMatrix( i, in );
+
+			}  // End of ' for( i=0; i<numCoorVar+1+1; ++i) '
+
+			Qx( numCoorVar+1, numCoorVar+1 ) = covMatrix(in, in);
+			x( numCoorVar+1 ) = solution(in);
+
+
+			std::cout << "in" << std::endl;
+			std::cout << in << std::endl;
+
+			std::cout << "covMatrix" << std::endl;
+			std::cout << covMatrix << std::endl;
+
+			std::cout << "martix Qx" << std::endl;
+			std::cout << Qx << std::endl;
+
+
+			ybar = phaseVec - A*x; 
+			Qybar = Qphase + A*Qx*transpose(A); 
+			
+				// Weight matrix
+			Matrix<double> rMatrix( inverse(Qybar) );
+
+			//std::cout << "ybar" << std::endl;
+			//std::cout << ybar << std::endl;
+
+				// Estimate float CS of this sat
+			SolverWMS solver;
+			solver.Compute(ybar, hMatrix, rMatrix);
+			
+				// Store the solution
+			Matrix<double> csVec( numPhaseTypes, 1, 0.0 );
+			for( i=0; i<numPhaseTypes; i++ )
+			{
+				csVec( i, 0 ) = solver.solution(i); 
+			}  // End of 'for( i=0; i<numPhaseTypes; i++ )'
+			Matrix<double> csCov( solver.covMatrix );
+
+
+			std::cout << "solution: " << std::endl;
+			std::cout << solver.solution << std::endl;
+
+		} // End of 'for( SatIDSet::iterator itSat = CSSatSet.begin(); ...'
+
+		exit(-1);
+
+	} // End of 'void CycleSlipEstimator2::satBySatResolution( ... '
+	
+
 
 			/** Cycle slip resolution
 			 *
@@ -1604,93 +1798,100 @@ namespace gpstk
 			 * @param gData   I/O
 			 *
 			 */
-	void CycleSlipEstimator2::cycleSlipResolution( Vector<double>& csVec,
-									  							  Matrix<double>& csCov, 
-																  satTypeValueMap& gData )
+	void CycleSlipEstimator2::cycleSlipResolution( 
+																satTypeValueMap& satTimeDiffData, 
+																satTypeValueMap& gData )
 	{
 
 		try
 		{
-				// Fix the float cycle-slip estimates
-				// MLAMBDA  
-			ARMLambda mlambda;	
-	
-				// Resolve
-			mlambda.resolve(csVec, csCov);
-	
-				// Fixed Solution 
-			Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
-			ratio = mlambda.getRatio();
-	
-				// Compute IB Success Rate
-			SuccessRate sr( csCov );
-			SR = sr.getSuccessRate();
-			
-	
+				// Sat by sat resolution
+			satBySatResolution( satTimeDiffData, gData );
 
-			std::cout << "SR: " << SR  << " ratio: " << ratio <<  std::endl;
-			if( SR > SuccessRateThreshold )
-			{
-				size_t s( csVec.size() );
-				for( size_t i=0; i<s; i++ )
-				{
-					SatID sat( ambColSat[i].first );
-					
-						// Phase Obs TypeID e.g. prefitL1
-					TypeID phaseType( ambColSat[i].second );
+				// Integrated resolution 
 
-					double fixedVal( fixedCSVec(i) );
 
-						// Convert phase TypeID to RinexObsID to get the band info
-					RinexObsID roi( phaseType.ConvertToRinexObsID(sat.system) );
-
-					int band( GetCarrierBand(roi) );
-					
-						// Insert fixed cycle slip 
-					satFixedCS[sat][phaseType] = fixedVal;
-					
-//					if( fixedVal != 0 )
-//					{
-//						 gData(sat)[TypeID::CSL1] = 1.0;
-//						 gData(sat)[TypeID::CSL2] = 1.0;
-//					}
+//				// Fix the float cycle-slip estimates
+//				// MLAMBDA  
+//			ARMLambda mlambda;	
+//	
+//				// Resolve
+//			mlambda.resolve(csVec, csCov);
+//	
+//				// Fixed Solution 
+//			Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
+//			ratio = mlambda.getRatio();
+//	
+//				// Compute IB Success Rate
+//			SuccessRate sr( csCov );
+//			SR = sr.getSuccessRate();
+//			
+//	
 //
-//					if( fixedVal == 0 )
-//					{
-//						 gData(sat)[TypeID::CSL1] = 0.0;
-//						 gData(sat)[TypeID::CSL2] = 0.0;
-//					}
-//						// Make cycle slip correction
-//					TypeID resultType( ConvertToTypeID(roi, sat) );
-//					gData(sat)(resultType) += getWavelength(sat, band)*fixedVal;
-					if( phaseType == TypeID::prefitL1 ) 
-					{
-//						gData(sat)[TypeID::CSL1] = 0.0;
-						gData(sat)(TypeID::L1) -= getWavelength(sat, band)*fixedVal;
-					} // End of 'if( phaseType == TypeID::prefitL1'
-					
-					if( phaseType == TypeID::prefitL2 )
-					{
-//						gData(sat)[TypeID::CSL2] = 0.0;
-						gData(sat)(TypeID::L2) -= getWavelength(sat, band)*fixedVal;
-					} // End of 'if( phaseType == TypeID::prefitL1'
-				} // End of ' for( size_t i=0; i<s; i++ ) '
-			}
-//			else {
+//			std::cout << "SR: " << SR  << " ratio: " << ratio <<  std::endl;
+//			if( SR > SuccessRateThreshold )
+//			{
 //				size_t s( csVec.size() );
 //				for( size_t i=0; i<s; i++ )
 //				{
 //					SatID sat( ambColSat[i].first );
-//								
-//						// No CS for this sat
-//					gData(sat)[TypeID::CSL1] = 0.0;
-//					gData(sat)[TypeID::CSL2] = 0.0;
-//				} 
-//			} // End of 'if( SR > 0.9 )'
+//					
+//						// Phase Obs TypeID e.g. prefitL1
+//					TypeID phaseType( ambColSat[i].second );
+//
+//					double fixedVal( fixedCSVec(i) );
+//
+//						// Convert phase TypeID to RinexObsID to get the band info
+//					RinexObsID roi( phaseType.ConvertToRinexObsID(sat.system) );
+//
+//					int band( GetCarrierBand(roi) );
+//					
+//						// Insert fixed cycle slip 
+//					satFixedCS[sat][phaseType] = fixedVal;
+//					
+////					if( fixedVal != 0 )
+////					{
+////						 gData(sat)[TypeID::CSL1] = 1.0;
+////						 gData(sat)[TypeID::CSL2] = 1.0;
+////					}
+////
+////					if( fixedVal == 0 )
+////					{
+////						 gData(sat)[TypeID::CSL1] = 0.0;
+////						 gData(sat)[TypeID::CSL2] = 0.0;
+////					}
+////						// Make cycle slip correction
+////					TypeID resultType( ConvertToTypeID(roi, sat) );
+////					gData(sat)(resultType) += getWavelength(sat, band)*fixedVal;
+//					if( phaseType == TypeID::prefitL1 ) 
+//					{
+////						gData(sat)[TypeID::CSL1] = 0.0;
+//						gData(sat)(TypeID::L1) -= getWavelength(sat, band)*fixedVal;
+//					} // End of 'if( phaseType == TypeID::prefitL1'
+//					
+//					if( phaseType == TypeID::prefitL2 )
+//					{
+////						gData(sat)[TypeID::CSL2] = 0.0;
+//						gData(sat)(TypeID::L2) -= getWavelength(sat, band)*fixedVal;
+//					} // End of 'if( phaseType == TypeID::prefitL1'
+//				} // End of ' for( size_t i=0; i<s; i++ ) '
+//			}
+////			else {
+////				size_t s( csVec.size() );
+////				for( size_t i=0; i<s; i++ )
+////				{
+////					SatID sat( ambColSat[i].first );
+////								
+////						// No CS for this sat
+////					gData(sat)[TypeID::CSL1] = 0.0;
+////					gData(sat)[TypeID::CSL2] = 0.0;
+////				} 
+////			} // End of 'if( SR > 0.9 )'
 		}
 		catch( Exception& e )
 		{
-			GPSTK_THROW( e );
+			Exception u( getClassName() + "CSR error: " + e.what() );
+			GPSTK_THROW( u );
 		}
 
 	} // End of ' void CycleSlipEstimator2::cycleSlipResolution( ... '
@@ -2078,7 +2279,11 @@ namespace gpstk
 				if( tmpSats.empty() ) break; 
 
 					// Remove 'tempBadSats' from 'satTimeDiffData'
-				satTimeDiffData.removeSatID( tmpSats );
+//				satTimeDiffData.removeSatID( tmpSats );
+
+					// Record CS sats 
+				CSSatSet.insert( tmpSats.begin(), tmpSats.end() );
+
 				
 			} // End of 'for( int iteration=0; iteration<100; ++iteration )'
 

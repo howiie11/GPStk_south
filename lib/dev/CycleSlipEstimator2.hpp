@@ -303,6 +303,9 @@ namespace gpstk
 
 		private:
 
+				/// sats set with CS
+			SatIDSet CSSatSet;
+
 				/// numUnknowns in modelTimediffData method 
 			size_t numUnknowns;
 
@@ -573,8 +576,7 @@ namespace gpstk
 			 * @param gData   I/O
 			 *
 			 */
-		virtual void cycleSlipResolution( Vector<double>& csVec, 
-							  					    Matrix<double>& csCov, 
+		virtual void cycleSlipResolution( satTypeValueMap& satTimeDiffData, 
 											       satTypeValueMap& gData );
 			/** Hypothesis of Normalised residual
 			 *
@@ -594,8 +596,14 @@ namespace gpstk
 		virtual void integratedDetection( satTypeValueMap& satTimeDiffData, 
 													 satTypeValueMap& gData );
 
-
-
+		/** Sat by sat CS resolution
+		 * 
+		 * @param satTimeDiffData
+		 *	@param gData 
+		 *
+		 */
+		virtual void satBySatResolution( satTypeValueMap& satTimeDiffData,
+													satTypeValueMap& gData );
 			
 
 	};   // End of class declaration
