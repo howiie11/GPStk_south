@@ -266,6 +266,14 @@ namespace gpstk
 				bool timeInteruption(false);
  				timeInteruption = getSatFilterData( epoch, sat, tvm, 
 																epochflag, satTimeDiffData ); 
+
+//				if( timeInteruption )
+//				{
+//						// This is the case of first observation session 
+//						// Just insert CS
+//					
+//				}
+
 				if( useTimeDifferencedLI )
 				{
 					try
@@ -432,6 +440,9 @@ namespace gpstk
 					// Clear data of this sat
 				satLIDataDeque.erase(sat);
 			}
+
+				// Clear the satCSMap 
+			satCSMap.erase(sat);
 
 				// Just return
 			return reportTimeInteruption;
@@ -1208,7 +1219,7 @@ namespace gpstk
 					//double upperTailPro( normal.Q( std::abs( normRes ) ) );
 					double upperTailPro( stuObj.Q( std::abs( normRes ), df ) );
 					
-					//std::cout <<  sat << " " << type << " normRes: " << normRes <<  " uppreTail: " << upperTailPro  << std::endl;
+//					std::cout <<  sat << " " << type << " normRes: " << normRes <<  " uppreTail: " << upperTailPro  << std::endl;
 	
 						// Judge code blunder test or CS detection
 					if( codeOnly && !phaseOnly  ) // Code Blunder test
@@ -1646,6 +1657,9 @@ namespace gpstk
 				// The sat index in 'x'
 			size_t in( numCoorVar + 1 + index );
 
+//			std::cout << "in" << std::endl;
+//			std::cout << in << std::endl;
+
 			Vector<double> ybar(numPhaseTypes, 0);
 			Vector<double> phaseVec(numPhaseTypes, 0);
 			Matrix<double> Qybar(numPhaseTypes, numPhaseTypes, 0.0);
@@ -1711,9 +1725,14 @@ namespace gpstk
 					Qphase( i, i ) = q/satTimeDiffData(sat)(TypeID::weight);
 
 				}
+				catch( SatIDNotFound& e )
+				{
+					std::cerr << e.what() << std::endl;
+				}
 				catch( ... )
 				{
 					Exception e(getClassName() + ": error in satBySatDetection()");
+					std::cerr << e.what() << std::endl;
 				} 
 				
 					// Increment of i
@@ -1748,14 +1767,12 @@ namespace gpstk
 			x( numCoorVar+1 ) = solution(in);
 
 
-			std::cout << "in" << std::endl;
-			std::cout << in << std::endl;
 
-			std::cout << "covMatrix" << std::endl;
-			std::cout << covMatrix << std::endl;
+			//std::cout << "covMatrix" << std::endl;
+			//std::cout << covMatrix << std::endl;
 
-			std::cout << "martix Qx" << std::endl;
-			std::cout << Qx << std::endl;
+			//std::cout << "martix Qx" << std::endl;
+			//std::cout << Qx << std::endl;
 
 
 			ybar = phaseVec - A*x; 
@@ -1772,20 +1789,67 @@ namespace gpstk
 			solver.Compute(ybar, hMatrix, rMatrix);
 			
 				// Store the solution
-			Matrix<double> csVec( numPhaseTypes, 1, 0.0 );
-			for( i=0; i<numPhaseTypes; i++ )
-			{
-				csVec( i, 0 ) = solver.solution(i); 
-			}  // End of 'for( i=0; i<numPhaseTypes; i++ )'
+//			Matrix<double> csVec( numPhaseTypes, 1, 0.0 );
+//			for( i=0; i<numPhaseTypes; i++ )
+//			{
+//				csVec( i, 0 ) = solver.solution(i); 
+//			}  // End of 'for( i=0; i<numPhaseTypes; i++ )'
+			csVec = solver.solution;
 			Matrix<double> csCov( solver.covMatrix );
 
 
 			std::cout << "solution: " << std::endl;
-			std::cout << solver.solution << std::endl;
+			std::cout << csVec << std::endl;
+			std::cout << "csCov: " << std::endl;
+			std::cout << csCov << std::endl;
+
+				// CS fixing
+
+				// MLAMBDA  
+			ARMLambda mlambda;	
+	
+				// Resolve
+			mlambda.resolve(csVec, csCov);
+	
+				// Fixed Solution 
+			Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
+			ratio = mlambda.getRatio();
+	
+				// Compute IB Success Rate
+			SuccessRate sr( csCov );
+			SR = sr.getSuccessRate();
+
+			std::cout << "fixedCS: " << std::endl;
+			std::cout << fixedCSVec << std::endl;
+			std::cout << "success rate: " << SR << " ratio: " << ratio << std::endl;
+
+				// CS repair
+			i = 0;
+			for( TypeIDSet::const_iterator itTypes = phaseTypes.begin(); 
+				  itTypes != phaseTypes.end(); 
+				  ++itTypes )
+			{
+				TypeID type( *itTypes );
+				
+				RinexObsID roi( type.ConvertToRinexObsID(sat.system) );
+				int band( GetCarrierBand( roi ) );
+
+				double fixedVal( fixedCSVec(i) );
+				if( SR > 0.9997 && fixedVal != 0 )
+				{
+					std::cout << "CS correction" << std::endl;
+					
+					TypeID rawType( type.ConvertToRawTypeID() );
+					gData(sat)(rawType) -= getWavelength(sat, band)*fixedVal;
+				}
+
+
+			}  // End of 'for( TypeIDSet::const_iterator itTypes = ... '
+			
+
 
 		} // End of 'for( SatIDSet::iterator itSat = CSSatSet.begin(); ...'
 
-		exit(-1);
 
 	} // End of 'void CycleSlipEstimator2::satBySatResolution( ... '
 	
@@ -1806,9 +1870,10 @@ namespace gpstk
 		try
 		{
 				// Sat by sat resolution
-			satBySatResolution( satTimeDiffData, gData );
+//			satBySatResolution( satTimeDiffData, gData );
 
 				// Integrated resolution 
+			integratedResolution( satTimeDiffData, gData );
 
 
 //				// Fix the float cycle-slip estimates
@@ -2266,8 +2331,10 @@ namespace gpstk
 													satTypeValueMap& satTimeDiffData, 
 													satTypeValueMap& gData )
 		{
+		
+				// Clear 'CSSatSet' first!!!
+			CSSatSet.clear();
 
-//			for( int iteration=0; iteration<100; ++iteration )
 			while(1)
 			{
 				SatIDSet tmpSats;
@@ -2284,10 +2351,316 @@ namespace gpstk
 					// Record CS sats 
 				CSSatSet.insert( tmpSats.begin(), tmpSats.end() );
 
-				
 			} // End of 'for( int iteration=0; iteration<100; ++iteration )'
 
 		} // End of 'virtual void CycleSlipEstimator2::integratedDetection( ... '
+
+
+		/** integrated CS resolution
+		 * 
+		 * @param satTimeDiffData
+		 *	@param gData 
+		 *
+		 */
+	void CycleSlipEstimator2::integratedResolution( satTypeValueMap& satTimeDiffData,
+																	satTypeValueMap& gData )
+	{
+
+			// Num of 'CSSatSet'
+		size_t numCSSat( CSSatSet.size() );
+
+			// If no CS sat is detected, just return  
+		if( numCSSat == 0 ) return;
+
+			// Num of sats 
+		size_t satsNum( satTimeDiffData.numSats() );
+
+		// Debug code vvv
+		std::cout << " sat in 'ionColSat' " << std::endl; 
+		for( int d=0;d<satsNum; d++ )
+		{
+			SatID sat( ionColSat[d] );
+			std::cout << d << ": " << sat << std::endl; 
+		}
+
+
+		// Debug code ^^^ 
+
+			// Compute rows and columns 
+		size_t numCSParam(0.0);
+			
+			// Loop through the 'CSSatSet'
+		std::cout << " num of CS sat: " << CSSatSet.size() << std::endl; 
+		for( SatIDSet::iterator itSat = CSSatSet.begin();
+			  itSat != CSSatSet.end();
+			  ++itSat )
+		{
+			SatID sat( *itSat );
+			std::cout << "CS sat: " << sat << std::endl;
+
+			SatID::SatelliteSystem sys( sat.system );
+
+			size_t numPhaseTypes( sysPhaseObsTypes(sys).size() );
+
+				// For every sat, accumulate the 'numPhaseTypes'
+			numCSParam += numPhaseTypes;
+			
+		} // End of 'for( SatIDSet::iterator itSat = CSSatSet.begin(); ... '
+
+		std::cout << "numCSParam: " << numCSParam << std::endl;
+
+			// Num of 'X'
+		size_t numX( numCoorVar + 1 + numCSSat );
+
+			// Num of Phase observable
+		size_t numPhaseObs(numCSParam);
+
+			// rows is equal to cols 
+		size_t rows( numPhaseObs ), cols( numCSParam );
+
+			// Fill 'y' 'hMatrix' 'rMatrix' 
+		Vector<double> ybar2( rows,  0.0 );
+		Matrix<double> Qybar2( rows, rows, 0.0 );
+		Vector<double> phaseVec( rows, 0.0 );
+		Matrix<double> Qphase( rows, rows, 0.0 );
+		Matrix<double> hMatrix( rows, cols, 0.0 );
+ 
+		Matrix<double> A( rows, numX, 0.0 );
+		Vector<double> x( numX, 0.0 );
+		Matrix<double> Qx( numX, numX, 0.0 );
+
+			// Row index
+		int i(0);
+
+			// sat index
+		int j(0);
+
+			// sat position index in ionospheric part of x 
+		std::vector<int> satXPos;
+
+			// map: row <---> < CS sat, type >
+		std::map< int, std::pair<SatID, TypeID> > rowMap;
+
+			// Loop through the 'CSSatSet'
+		for( SatIDSet::iterator itSat = CSSatSet.begin();
+			  itSat != CSSatSet.end();
+			  ++itSat )
+		{
+
+			SatID sat( *itSat );
+			std::cout  << sat << std::endl;
+
+			TypeIDSet phaseTypes( sysPhaseObsTypes(sat.system) );	
+
+			for( TypeIDSet::const_iterator itTypes = phaseTypes.begin();
+				  itTypes != phaseTypes.end();
+				  ++itTypes ) 
+			{
+				TypeID pType( *itTypes );
+				std::cout << "Phase Type: " << pType << std::endl;
+
+				try
+				{
+						// Phase observable of 'sat'
+					double phase( satTimeDiffData(sat)(pType) );
+
+						// Get the current band 
+					RinexObsID roi( pType.ConvertToRinexObsID(sat.system) );
+					int band( GetCarrierBand( roi ) );
+					double miu( getMiu( sat.system, band ) );
+
+						// ***Fill matrix A 
+					if( !staticReceiver )
+					{
+							// Coefficients for the coordinate displacement deltadx/y/z
+							// but here is an approximation:
+						A(i, 0) = gData(sat)(TypeID::dx); 
+						A(i, 1) = gData(sat)(TypeID::dy); 
+						A(i, 2) = gData(sat)(TypeID::dz); 
+					} 
+
+						// Coefficients for the variation of receiver clock 
+					A( i, numCoorVar ) = 1.0;
+
+						// *** iono coefficient
+					A( i, numCoorVar + 1 + j ) = -1 * miu;
+
+						// hMatrix, only ambiguity term
+					hMatrix( i, i ) = getWavelength( sat, band );
+
+						// Assignment
+					phaseVec(i) = phase;
+
+						// zenith weight
+					double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, 
+												 TypeID::prefitPC ) );
+					double phaseStd( obsStd.getGNSSObsSTD(sat.system, pType) );
+					double q( phaseStd/unitWeightStd );
+					q *= q;
+					
+					Qphase( i, i ) = q/satTimeDiffData(sat)(TypeID::weight);
+
+				}
+				catch(Exception& e)
+				{
+					Exception u( getClassName() + "integratedResolution error!" + 
+									 e.what() );
+					std::cerr << u.what() << std::endl;
+				}
+
+					// Insert this sat row 
+				rowMap[i] = std::make_pair( sat, pType );
+
+					// Increment of row index
+				i++;
+
+
+			} // End of 'for( TypeIDSet::const_iterator itTypes ... '
+
+
+			size_t index(0);
+			for(; index<satsNum; index++)
+			{
+				SatID satIonCol( ionColSat[index] );	
+
+					// If found
+				if( satIonCol == sat ) break;
+			}
+
+				// Record this iono index 
+			satXPos.push_back( numCoorVar + 1  + index );
+
+				// Increment of sat
+			j++;
+
+		}  // End of ' for( SatIDSet::iterator itSat = CSSatSet.begin(); ... '
+
+			// Get Qx and x 
+		for( i=0; i<numCoorVar+1; i++ )
+		{
+			x(i) = solution(i);
+
+			for( j=0; j<numCoorVar+1; j++)
+			{
+				Qx( i, j ) = covMatrix(i, j);
+			} // end of ' for( int j=0; j<numCoorVar+1; j++) '
+		} // End of 'for( i=0; i<numCoorVar+1; i++ )'
+
+		for( i=0; i<numCSSat; i++ )
+		{
+			x(numCoorVar+1+i) = solution( satXPos[i] );
+			for( j=0; j<numCoorVar+1; j++ )
+			{
+				Qx( numCoorVar+1+i, j ) = Qx( j, numCoorVar+1+i ) 
+												= covMatrix( satXPos[i], j );  
+			} // End of 'for( j=0; j<numCSSat; j++ )'
+
+			for( j=0; j<numCSSat; j++ )
+			{
+				Qx( numCoorVar+1+i, numCoorVar+1+j ) 
+//					= Qx( numCoorVar+1+j, numCoorVar+1+i ) 
+						= covMatrix( satXPos[i], satXPos[j] );
+			} // End of 'for( j=numCoorVar+1; j<numCoorVar+1+numCSSat; j++ )'
+		}  // End of 'for( i=0; i<numCSSat; i++ )'
+
+//		std::cout << "covMatrix" << std::endl;
+//		std::cout << covMatrix << std::endl;
+//		std::cout << "Qx" << std::endl;
+//		std::cout << Qx << std::endl;
+
+			// Solve the float CS
+		ybar2 = phaseVec - A*x;
+		Qybar2 = Qphase + A*Qx*transpose(A);
+
+			// Weight matrix
+		Matrix<double> rMatrix( inverse(Qybar2) );
+
+		SolverWMS solver;
+		solver.Compute(ybar2, hMatrix, rMatrix);
+
+		csVec = solver.solution;
+		csCov = solver.covMatrix;
+
+		std::cout << "solution: " << std::endl;
+		for(i=0; i<rows; i++)
+		{
+		
+			std::cout << rowMap[i].first << " " << rowMap[i].second << " " << csVec(i) << std::endl;
+		}
+
+
+			// Fix the float CS as a whole 
+
+			// MLAMBDA 
+		ARMLambda mlambda;
+
+			// Resolve
+		mlambda.resolve(csVec, csCov);
+
+		Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
+		ratio = mlambda.getRatio();
+
+			// Compute IB Success Rate
+		SuccessRate sr( csCov );
+		SR = sr.getSuccessRate();
+
+			// Mark CS flag
+		std::cout << "success rate: " << SR << " ratio: " << ratio << std::endl;
+		std::cout << "fixed solution: " << std::endl;
+		if( SR > 0.99 )
+		{
+			for(i=0; i<rows; i++)
+			{
+				SatID& sat( rowMap[i].first );
+				TypeID& type( rowMap[i].second );
+
+
+				RinexObsID roi( type.ConvertToRinexObsID(sat.system) );
+				int band( GetCarrierBand( roi ) );
+				TypeID rawType( type.ConvertToRawTypeID() );
+				TypeID csType( type.ConvertToCSTypeID() );
+				
+				double fixedVal( fixedCSVec(i) ); 
+				if( fixedVal != 0 )
+				{
+
+						// Make Cycle Slip correction 
+//					gData(sat)(csType) = 0.0;
+//					gData(sat)(rawType) -= satCSMap(sat)(csType);
+//					try{
+//						typeValueMap tvm(satCSMap(sat));	
+//					}
+//					catch( SatIDNotFound& e )
+//					{ 
+//						std::cout << "make CS correction" << std::endl;
+//						gData(sat)(csType) = 0.0;
+						gData(sat)(rawType) -= getWavelength(sat, band)*fixedVal;
+//					}
+//						// Insert the CS value into 'satCSMap' first 
+//						// This is an accumulated quantity
+//					satCSMap[sat][csType] += getWavelength(sat, band)*fixedVal;
+				} 
+
+
+//				try
+//				{
+////					gData(sat)(csType) = 0.0;
+//					gData(sat)(rawType) -= satCSMap(sat)(csType);
+//				}
+//				catch( Exception& e )
+//				{
+//					Exception u(getClassName() + " CS correction error" + e.what() );
+//					std::cerr << u.what() << std::endl;
+//					GPSTK_THROW( u );
+//				} 
+//				std::cout << rowMap[i].first << " " << rowMap[i].second << " " << fixedCSVec(i) << std::endl;
+			}
+		}  // End of 'if( SR > 0.97 )'
+
+//		exit(-1);
+
+	} // End of 'void CycleSlipEstimator2::integratedResolution( ... '
+	
 
 
 			/** Hypothesis of Normalised residual

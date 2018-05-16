@@ -303,7 +303,10 @@ namespace gpstk
 
 		private:
 
-				/// sats set with CS
+				/// Accumulated sat CS values 
+			satTypeValueMap satCSMap;
+
+				/// Sats set with CS
 			SatIDSet CSSatSet;
 
 				/// numUnknowns in modelTimediffData method 
@@ -604,6 +607,16 @@ namespace gpstk
 		 */
 		virtual void satBySatResolution( satTypeValueMap& satTimeDiffData,
 													satTypeValueMap& gData );
+
+		/** integrated CS resolution
+		 * 
+		 * @param satTimeDiffData
+		 *	@param gData 
+		 *
+		 */
+		virtual void integratedResolution( satTypeValueMap& satTimeDiffData,
+													  satTypeValueMap& gData );
+	
 			
 
 	};   // End of class declaration
