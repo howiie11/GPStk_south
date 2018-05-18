@@ -221,6 +221,25 @@ namespace gpstk
          /// Returns a string identifying this object.
       virtual std::string getClassName(void) const;
 
+			/// Set Sys<--->CS flag
+		virtual LICSDetectorMGEX& addSystemCSFlagSet( 
+															const SatID::SatelliteSystem& sys,
+															TypeIDSet& CSFlagSet )
+		{ 
+			sysCSTypes[ sys ] = CSFlagSet;	
+			return (*this);
+		}
+
+			/// Set Sys<--->LLI flag
+		virtual LICSDetectorMGEX& addSystemLLIFlagSet( 
+															const SatID::SatelliteSystem& sys,
+															TypeIDSet& LLIFlagSet )
+		{ 
+			sysLLITypes[ sys ] = LLIFlagSet;	
+			return (*this);
+		}
+
+
 
          /// Destructor
       virtual ~LICSDetectorMGEX() {};
@@ -228,6 +247,11 @@ namespace gpstk
 
    private:
 
+			/// SysCSFlagSet 
+		SysTypeIDSetMap sysCSTypes;
+
+			/// SysLLIFlagSet 
+		SysTypeIDSetMap sysLLITypes;
 
          /// Type of observable.
       TypeID obsType;
@@ -314,8 +338,9 @@ namespace gpstk
                                    typeValueMap& tvMap,
                                    const short& epochflag,
                                    const double& li,
-                                   const double& lli1,
-                                   const double& lli2 );
+											  const bool& lliCS );
+                                   //const double& lli1,
+                                   //const double& lli2 );
 
 
    }; // End of class 'LICSDetectorMGEX'

@@ -105,91 +105,144 @@ namespace gpstk
 					// Sat
 				SatID sat(it->first);
 
-					// Reset result type for Galileo
-				if( sat.system == SatID::systemGalileo )
-				{
-					resultType2 = TypeID::CSL5;
-				}
-	
-
+				bool lliCS(false);
             if (useLLI)
             {
+
+					TypeIDSet lliTypes( sysLLITypes(sat.system) );
+
+					for( TypeIDSet::iterator itType = lliTypes.begin(); 
+						  itType != lliTypes.end();
+						  ++itType )
+					{
+						TypeID lliType( *itType );
 						
-						// Prepare lliType and resultType according to system
-					if( sat.system == SatID::systemGPS )
-					{
+						double lli(0.0);
+							// Get the lli value
 	               try
 	               {
 	                     // Try to get the LLI1 index
-	                  lli1  = (*it).second(lliType1);
+	                  lli  = (*it).second(lliType);
 	               }
 	               catch(...)
 	               {
 	                     // If LLI #1 is not found, set it to zero
 	                     // You REALLY want to have BOTH LLI indexes properly set
-	                  lli1 = 0.0;
-	               }
-	
-	               try
-	               {
-	                     // Try to get the LLI2 index
-	                  lli2  = (*it).second(lliType2);
-	               }
-	               catch(...)
-	               {
-	                     // If LLI #2 is not found, set it to zero
-	                     // You REALLY want to have BOTH LLI indexes properly set
-	                  lli2 = 0.0;
-	               }
-					}
-					else if ( sat.system == SatID::systemGalileo )
-					{
-						try
-	               {
-	                     // Try to get the LLI1 index
-	                  lli1  = (*it).second(lliType1);
-	               }
-	               catch(...)
-	               {
-	                     // If LLI #1 is not found, set it to zero
-	                     // You REALLY want to have BOTH LLI indexes properly set
-	                  lli1 = 0.0;
-	               }
-	
-	               try
-	               {
-	                     // Try to get the LLI2 index
-	                  lli2  = (*it).second(lliType5);
-	               }
-	               catch(...)
-	               {
-	                     // If LLI #2 is not found, set it to zero
-	                     // You REALLY want to have BOTH LLI indexes properly set
-	                  lli2 = 0.0;
+	                  lli = 0.0;
 	               }
 
+						if( lli == 1.0 || lli == 3.0 || lli == 5.0 || lli == 7.0 )
+						{
+							lliCS = true;
 
-					}
-            }
+								// We don't look it further
+							break;
+						}
 
+					} // End of 'for( TypeIDSet::iterator itType ... '
+				} // End of 'if (useLLI)'
+						
+//						// Prepare lliType and resultType according to system
+//					if( sat.system == SatID::systemGPS )
+//					{
+//	               try
+//	               {
+//	                     // Try to get the LLI1 index
+//	                  lli1  = (*it).second(lliType1);
+//	               }
+//	               catch(...)
+//	               {
+//	                     // If LLI #1 is not found, set it to zero
+//	                     // You REALLY want to have BOTH LLI indexes properly set
+//	                  lli1 = 0.0;
+//	               }
+//	
+//	               try
+//	               {
+//	                     // Try to get the LLI2 index
+//	                  lli2  = (*it).second(lliType2);
+//	               }
+//	               catch(...)
+//	               {
+//	                     // If LLI #2 is not found, set it to zero
+//	                     // You REALLY want to have BOTH LLI indexes properly set
+//	                  lli2 = 0.0;
+//	               }
+//					}
+//					else if ( sat.system == SatID::systemGalileo )
+//					{
+//						try
+//	               {
+//	                     // Try to get the LLI1 index
+//	                  lli1  = (*it).second(lliType1);
+//	               }
+//	               catch(...)
+//	               {
+//	                     // If LLI #1 is not found, set it to zero
+//	                     // You REALLY want to have BOTH LLI indexes properly set
+//	                  lli1 = 0.0;
+//	               }
+//	
+//	               try
+//	               {
+//	                     // Try to get the LLI2 index
+//	                  lli2  = (*it).second(lliType5);
+//	               }
+//	               catch(...)
+//	               {
+//	                     // If LLI #2 is not found, set it to zero
+//	                     // You REALLY want to have BOTH LLI indexes properly set
+//	                  lli2 = 0.0;
+//	               }
+//
+//
+//					}
+//            }
+//
                // If everything is OK, then get the new values inside the
                // structure. This way of computing it allows concatenation of
                // several different cycle slip detectors
-            (*it).second[resultType1] += getDetection( epoch,
-                                                       (*it).first,
-                                                       (*it).second,
-                                                       epochflag,
-                                                       value1,
-                                                       lli1,
-                                                       lli2 );
+				
+					// CS detection result
+				double cs( getDetection( epoch,
+                       (*it).first,
+                       (*it).second,
+                       epochflag,
+                       value1,
+                       lliCS ) );
 
-            if ( (*it).second[resultType1] > 1.0 )
-            {
-               (*it).second[resultType1] = 1.0;
-            }
+					// Mark the CS flag on this sat 
+					// This operation depends on the system and defined CSFlag set
+				TypeIDSet csTypes( sysCSTypes(sat.system) );
+				for( TypeIDSet::iterator itCS = csTypes.begin(); 
+					  itCS != csTypes.end(); 
+					  ++itCS )
+				{
+					TypeID csType( *itCS );
+					(*it).second[ csType ] += cs; 
 
-               // We will mark both cycle slip flags
-            (*it).second[resultType2] = (*it).second[resultType1];
+					if( (*it).second[ csType ] > 1.0 )
+					{
+						(*it).second[ csType ] = 1.0;
+					}
+
+				} // End of 'for( TypeIDSet::iterator itCS = csTypes.begin(); ... '
+				
+//            (*it).second[resultType1] += getDetection( epoch,
+//                                                       (*it).first,
+//                                                       (*it).second,
+//                                                       epochflag,
+//                                                       value1,
+//                                                       lli1,
+//                                                       lli2 );
+//
+//            if ( (*it).second[resultType1] > 1.0 )
+//            {
+//               (*it).second[resultType1] = 1.0;
+//            }
+//
+//               // We will mark both cycle slip flags
+//            (*it).second[resultType2] = (*it).second[resultType1];
 
          }
 
@@ -327,8 +380,9 @@ namespace gpstk
                                       typeValueMap& tvMap,
                                       const short& epochflag,
                                       const double& li,
-                                      const double& lli1,
-                                      const double& lli2 )
+												  const bool& lliCS )
+                                      //const double& lli1,
+                                      //const double& lli2 )
    {
 
       bool reportCS(false);
@@ -368,25 +422,25 @@ namespace gpstk
 //           (tvMap(lliType1)==3.0) ||
 //           (tvMap(lliType1)==5.0) ||
 //           (tvMap(lliType1)==7.0) )
-		if( lli1 == 1.0 ||
-			 lli1 == 3.0 ||
-			 lli1 == 5.0 ||
-			 lli1 == 7.0 )
-      {
-         tempLLI1 = 1.0;
-      }
+//		if( lli1 == 1.0 ||
+//			 lli1 == 3.0 ||
+//			 lli1 == 5.0 ||
+//			 lli1 == 7.0 )
+//      {
+//         tempLLI1 = 1.0;
+//      }
 
 //      if ( (tvMap(lliType2)==1.0) ||
 //           (tvMap(lliType2)==3.0) ||
 //           (tvMap(lliType2)==5.0) ||
 //           (tvMap(lliType2)==7.0) )
-		if( lli2 == 1.0 ||
-			 lli2 == 3.0 ||
-			 lli2 == 5.0 ||
-			 lli2 == 7.0 )
-      {
-         tempLLI2 = 1.0;
-      }
+//		if( lli2 == 1.0 ||
+//			 lli2 == 3.0 ||
+//			 lli2 == 5.0 ||
+//			 lli2 == 7.0 )
+//      {
+//         tempLLI2 = 1.0;
+//      }
 
 //    if ( (epochflag==1)  ||
 //         (epochflag==6)  ||
@@ -397,8 +451,9 @@ namespace gpstk
          /**
           *  The 'epochflag' is not reliable.
           */
-      if ( (tempLLI1==1.0) ||
-           (tempLLI2==1.0) ||
+//      if ( (tempLLI1==1.0) ||
+//           (tempLLI2==1.0) ||
+      if ( lliCS ||
            (currentDeltaT > deltaTMax) )
       {
 

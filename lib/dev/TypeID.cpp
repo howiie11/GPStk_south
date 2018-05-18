@@ -35,6 +35,9 @@ namespace gpstk
 
    std::map< TypeID::ValueType, std::string > TypeID::tStrings;
 
+		// static member has to be written again
+	std::map< std::string, TypeID::ValueType > TypeID::tTypeID;
+
 
    TypeID::Initializer TypeIDsingleton;
 
@@ -93,8 +96,25 @@ namespace gpstk
       tStrings[LC]         = "LC";
       tStrings[PI]         = "PI";
       tStrings[LI]         = "LI";
-      tStrings[deltaLI]    = "Time-differenced_LI";
-      tStrings[deltaDeltaLI]    = "Double_time-differenced_LI";
+      tStrings[LI12]         = "LI12";
+      tStrings[LI15]         = "LI15";
+      tStrings[LI25]         = "LI25";
+      tStrings[LI17]         = "LI17";
+      tStrings[LI57]         = "LI57";
+      tStrings[dLI]         = "dLI";
+      tStrings[dLI12]         = "dLI12";
+      tStrings[dLI15]         = "dLI15";
+      tStrings[dLI25]         = "dLI25";
+      tStrings[dLI17]         = "dLI17";
+      tStrings[dLI57]         = "dLI57";
+      tStrings[d2LI]         = "d2LI";
+      tStrings[d2LI12]         = "d2LI12";
+      tStrings[d2LI15]         = "d2LI15";
+      tStrings[d2LI25]         = "d2LI25";
+      tStrings[d2LI17]         = "d2LI17";
+      tStrings[d2LI57]         = "d2LI57";
+//      tStrings[deltaLI]    = "Time-differenced_LI";
+//      tStrings[deltaDeltaLI]    = "Double_time-differenced_LI";
       tStrings[Pdelta]     = "Pdelta";
       tStrings[Ldelta]     = "Ldelta";
       tStrings[MWubbena]   = "MWubbena";
@@ -302,6 +322,11 @@ namespace gpstk
       tStrings[postfitC5]  = "postfitResidualCodeC5";
       tStrings[postfitL5]  = "postfitResidualPhaseL5";
 
+      tStrings[prefitC7]   = "prefitResidualCodeC7";
+      tStrings[prefitL7]   = "prefitResidualPhaseL7";
+      tStrings[postfitC7]  = "postfitResidualCodeC7";
+      tStrings[postfitL7]  = "postfitResidualPhaseL7";
+
       tStrings[prefitGRAPHIC1]  = "prefitResidualGRAPHIC1";
       tStrings[prefitGRAPHIC2]  = "prefitResidualGRAPHIC2";
       tStrings[postfitGRAPHIC1] = "postfitResidualGRAPHIC1";
@@ -443,39 +468,298 @@ namespace gpstk
       tStrings[dummy7]     = "dummy7";
       tStrings[dummy8]     = "dummy8";
       tStrings[dummy9]     = "dummy9";
+      tStrings[numFreq]     = "number_frequency";
+      tStrings[postfitDeltaIono]     = "postfit_delta_iono";
       tStrings[Last]       = "Last";
       tStrings[Placeholder]= "Placeholder";
+
+			// tTypeID
+		tTypeID["LI"] = TypeID::LI;
+		tTypeID["LI12"] = TypeID::LI12;
+		tTypeID["LI15"] = TypeID::LI15;
+
+		tTypeID["dLI"] = TypeID::dLI;
+		tTypeID["dLI12"] = TypeID::dLI12;
+		tTypeID["dLI15"] = TypeID::dLI15;
+
+		tTypeID["d2LI"] = TypeID::d2LI;
+		tTypeID["d2LI12"] = TypeID::d2LI12;
+		tTypeID["d2LI15"] = TypeID::d2LI15;
    }
 
 
 		// Added by Lei Zhao vvv 
+
+		/// Convert TypeID to its time-differenced TypeID version
+	TypeID TypeID::ConvertToTimeDiffType( const int order ) const
+	{
+		TypeID type;
+		TypeID currentType( *this );
+
+		std::string diffStr;
+		std::string currentTypeStr( StringUtils::asString(currentType) );
+		std::string resultStr;
+
+		if( order == 1 )
+		{
+			diffStr = "d";	
+		}
+		else
+		{
+			diffStr = "d" + StringUtils::asString(order);
+		}
+
+		resultStr = diffStr + currentTypeStr;
+		std::map< std::string, ValueType >::iterator it = tTypeID.find( resultStr );
+		if( it != tTypeID.end() )
+		{
+			type = it -> second;
+			return type;
+		}
+		else
+		{
+			Exception e( resultStr + "cannot be converted to a defined TypeID" );
+			GPSTK_THROW(e);
+		} // End of ' if( it != tTypeID.end() ) '
+	} // End of ' TypeID TypeID::ConvertToTimeDiffType( const int order ) '
+
+	Antenna::frequencyType TypeID::getFequencyType( const SatID::SatelliteSystem& sys )
+	{
+		TypeID& type(*this);
+		Antenna::frequencyType ft(Antenna::G01);
+
+		try
+		{
+			RinexObsID roi( type.ConvertToRinexObsID(sys) );
+			int band( GetCarrierBand(roi) );
+
+			if( sys == SatID::systemGPS )
+			{
+				if( band == 1 ) ft = Antenna::G01;			
+				if( band == 2 ) ft = Antenna::G02;			
+				if( band == 5 ) ft = Antenna::G05;			
+			}
+			else if( sys == SatID::systemGalileo )
+			{
+	
+				if( band == 1 ) ft = Antenna::E01;			
+				if( band == 5 ) ft = Antenna::E05;			
+				if( band == 7 ) ft = Antenna::E07;			
+			}
+			else{
+				Exception e("Unsupported Sat system: " + StringUtils::asString(sys) );
+				GPSTK_THROW(e);
+			} // End of 'if( sys == SatID::systemGPS )'
+
+			return ft;
+		}
+		catch( Exception& e )
+		{
+			Exception u("Error occurred in TypeID::getfequencyType()!" + e.what());
+			GPSTK_THROW(u);
+		} 
+
+	} // End of 'Antenna::frequencyType TypeID::getfequencyType( ... '
+
+		/// Convert prefitTypeID to original TypeID 
+	TypeID TypeID::ConvertToRawTypeID() 
+	{
+		TypeID& type(*this);
+		TypeID rawType;
+
+		if( type == TypeID::prefitP1 )
+		{ rawType = TypeID::P1; }
+		if( type == TypeID::prefitC1 )
+		{ rawType = TypeID::C1; }
+		else if( type == TypeID::prefitP2 )
+		{ rawType = TypeID::P2; }
+//		else if( type == TypeID::prefitC2 )
+//		{ rawType = TypeID::C2; }
+		else if( type == TypeID::prefitC5 )
+		{ rawType = TypeID::C5; }
+		else if( type == TypeID::prefitL1 )
+		{ rawType = TypeID::L1; }
+		else if( type == TypeID::prefitL2 )
+		{ rawType = TypeID::L2; }
+		else if( type == TypeID::prefitL5 )
+		{ rawType = TypeID::L5; }
+		else{
+			Exception e(StringUtils::asString(type) + "is not a 'prefit' TypeID");
+			GPSTK_THROW(e);
+		}
+
+		return rawType;
+	}
+
+	
+		/// Convert Phase TypeID to its corresponding Cycle Slip type
+	TypeID TypeID::ConvertToCSTypeID()
+	{
+		TypeID& type(*this);
+		TypeID csType;
+
+		if( type == TypeID::L1 || type == TypeID::prefitL1 )
+		{
+			csType = TypeID::CSL1;	
+		} else if( type == TypeID::L2 || type == TypeID::prefitL2 )
+		{
+			csType = TypeID::CSL2;	
+		} else if( type == TypeID::L5 || type == TypeID::prefitL5 )
+		{
+			csType = TypeID::CSL5;	
+		} else 
+		{
+			Exception e(StringUtils::asString(type) + " is not a phase type");
+			GPSTK_THROW(e);
+		}  // End of 'if( type == TypeID::L1 || type == TypeID::prefitL1 )'
+
+		return csType;
+
+	} // End of 'TypeID TypeID::ConvertToCSTypeID( ... '
+
+	RinexObsID TypeID::ConvertToRinexObsID( const SatID::SatelliteSystem& sys )
+	{
+		TypeID type(*this);
+		RinexObsID roi(ObsID::otUnknown, ObsID::cbUnknown, ObsID::tcUnknown );
+
+		if( sys == SatID::systemGPS )
+		{
+				// L1
+			if( type == TypeID::C1 || type == TypeID::prefitC1 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbL1, ObsID::tcCA );
+			}
+			else if( type == TypeID::P1 || type == TypeID::prefitP1 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbL1, ObsID::tcP );
+			}
+			else if( type == TypeID::L1 || type == TypeID::prefitL1 )
+			{
+				roi = RinexObsID( ObsID::otPhase, ObsID::cbL1, ObsID::tcUnknown );
+			}
+				// L2
+			else if( type == TypeID::P2 || type == TypeID::prefitP2 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbL2, ObsID::tcP );
+			}
+			else if( type == TypeID::L2 || type == TypeID::prefitL2 )
+			{
+				roi = RinexObsID( ObsID::otPhase, ObsID::cbL2, ObsID::tcUnknown );
+			}
+				// L5
+			else if( type == TypeID::C5 || type == TypeID::prefitC5 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbL5, ObsID::tcUnknown );
+			}
+			else if( type == TypeID::L5 || type == TypeID::prefitL5 )
+			{
+				roi = RinexObsID( ObsID::otPhase, ObsID::cbL5, ObsID::tcUnknown );
+			}
+		}
+		else if( sys == SatID::systemGalileo )
+		{
+				// E1
+			if( type == TypeID::C1 || type == TypeID::prefitC1 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbL1, ObsID::tcUnknown );
+			}
+			else if( type == TypeID::L1 || type == TypeID::prefitL1 )
+			{
+				roi = RinexObsID( ObsID::otPhase, ObsID::cbL1, ObsID::tcUnknown );
+			}
+				// E5a
+			else if( type == TypeID::C5 || type == TypeID::prefitC5 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbL5, ObsID::tcUnknown );
+			}
+			else if( type == TypeID::L5 || type == TypeID::prefitL5 )
+			{
+				roi = RinexObsID( ObsID::otPhase, ObsID::cbL5, ObsID::tcUnknown );
+			}
+				// E5b
+			else if( type == TypeID::C7 || type == TypeID::prefitC7 )
+			{
+				roi = RinexObsID( ObsID::otRange, ObsID::cbE5b, ObsID::tcUnknown );
+			}
+			else if( type == TypeID::L7 || type == TypeID::prefitL7 )
+			{
+				roi = RinexObsID( ObsID::otPhase, ObsID::cbE5b, ObsID::tcUnknown );
+			}
+		
+
+		}
+
+		return roi;
+
+	} // End of ' RinexObsID TypeID::ConvertToRinexObsID ... ' 
+
+		// *This method is only valid for GPS, rinex verion 2
+		// *It is related the method ' int GetCarrierBand(const RinexObsType& rot) ' 
 	RinexObsType TypeID::ConvertToRinexObsType( const SatID::SatelliteSystem& sys )
 	{
 
 		TypeID type(*this);
 
-		if( sys == SatID::systemGPS )
-		{
-				// For L1: C1 P1 L1 D1 S1 
-			if( type == TypeID::P1 || type == TypeID::prefitP1 )
-			{ return RinexObsHeader::P1; }
-			if( type == TypeID::L1 || type == TypeID::prefitL1 )
-			{ return RinexObsHeader::L1; }
+			// For L1, E1 
+		if( type == TypeID::C1 || type == TypeID::prefitC1 )
+		{ return RinexObsHeader::C1; }
+		if( type == TypeID::P1 || type == TypeID::prefitP1 )
+		{ return RinexObsHeader::P1; }
+		if( type == TypeID::L1 || type == TypeID::prefitL1 )
+		{ return RinexObsHeader::L1; }
 
-				// For L2: C2 P2 L2 D2 S2
-			if( type == TypeID::P2 || type == TypeID::prefitP2 )
-			{ return RinexObsHeader::P2; }
-			if( type == TypeID::L2 || type == TypeID::prefitL2 )
-			{ return RinexObsHeader::L2; }
+			// For L2
+		if( type == TypeID::P2 || type == TypeID::prefitP2 )
+		{ return RinexObsHeader::P2; }
+		if( type == TypeID::L2 || type == TypeID::prefitL2 )
+		{ return RinexObsHeader::L2; }
 
-		}
-		else if( sys == SatID::systemGalileo )
-		{
+//			// E5a
+//		if( type == TypeID::C5 || type == TypeID::prefitC5 ) 
+//		{ return RinexObsHeader::C5; }
+//		if( type == TypeID::L5 || type == TypeID::prefitL5 ) 
+//		{ return RinexObsHeader::L5; }
 
-		}
-
+		return RinexObsHeader::UN;
 
 	}   // End of ''
+
+		 /// Convert postfit TypeID to prefit TypeID
+	TypeID TypeID::ConvertToPrefitTypeID()
+	{
+		TypeID currentType( *this );
+		TypeID prefitType( currentType );
+
+		if( currentType == TypeID::postfitP1 )
+		{ prefitType = TypeID::prefitP1; }
+		else if( currentType == TypeID::postfitP2 )
+		{ prefitType = TypeID::prefitP2; }
+		else if( currentType == TypeID::postfitL1 )
+		{ prefitType = TypeID::prefitL1; }
+		else if( currentType == TypeID::postfitL2 )
+		{ prefitType = TypeID::prefitL2; }
+
+		return prefitType;
+	} // ENd of 'TypeID ConvertToPrefitTypeID()'
+
+		 /// Convert prefit TypeID to postfit TypeID
+	TypeID TypeID::ConvertToPostfitTypeID()
+	{
+		TypeID currentType( *this );
+		TypeID postfitType( currentType );
+
+		if( currentType == TypeID::prefitP1 )
+		{ postfitType = TypeID::postfitP1; }
+		else if( currentType == TypeID::prefitP2 )
+		{ postfitType = TypeID::postfitP2; }
+		else if( currentType == TypeID::prefitL1 )
+		{ postfitType = TypeID::postfitL1; }
+		else if( currentType == TypeID::prefitL2 )
+		{ postfitType = TypeID::postfitL2; }
+
+		return postfitType;
+	} // ENd of 'TypeID ConvertToPrefitTypeID()'
+
 
 
 
@@ -559,7 +843,7 @@ namespace gpstk
       return s;
    }
 
-
+	
    bool IsCarrierPhase(const RinexObsType& rot)
    {
       return (rot.type[0]=='L') ? true : false;
@@ -601,6 +885,25 @@ namespace gpstk
 
      return -1;
    }
+
+		/* Added by Lei Zhao, to handle LI TypeID, like LI12, LI13, LI25 ...  
+		 * which must be 4 characters long in size in its string form 
+		 * 
+		 * @param bandIndex   I 1 or 2
+		 */
+	int GetLITypeCarrierBand( const TypeID& liType, const int& bandIndex )
+	{
+
+		std::string liStr( StringUtils::asString(liType) );
+		if( liStr.size() != 4 )
+		{
+			Exception e( "illegal LI type: " + liStr );
+			GPSTK_THROW(e);
+		}
+		
+		return StringUtils::asInt( liStr.substr(1+bandIndex, 1) ); 
+
+	} // End of ' int Get1stCarrierBand( const TypeID& liType ) '
 
 	
    TypeID::ValueType ConvertToTypeID(const RinexObsType& rot,

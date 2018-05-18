@@ -502,6 +502,25 @@ namespace gpstk
       { antenna = antennaObj; useAzimuth = true; return (*this); };
 
 
+			/// Get 'sysPCOMap' given a sys
+		virtual void getPCOMap( SatID::SatelliteSystem sys );
+
+			/** Set systems and observation types 
+			 * 
+			 * @param sys        sat systems 
+			 * @param ots        obs types of sys
+			 *
+			 */
+		virtual CorrectObservables& addSystemObsTypes( 
+											const SatID::SatelliteSystem& usrSys, 
+											TypeIDSet& usrObsTypes )
+		{
+			sysObsTypes[usrSys] = usrObsTypes;	
+			getPCOMap(usrSys);
+			return (*this);
+		}
+
+
          /// Returns whether azimuth-dependent antenna patterns are being used.
          /// When an Antenna is set, this parameter is true by default.
       virtual bool getUseAzimuth(void) const
@@ -542,6 +561,11 @@ namespace gpstk
          /// Whether azimuth-dependent antenna patterns will be used or not
       bool useAzimuth;
 
+			/// Sat system <---> ObsTypes 
+		SysTypeIDSetMap sysObsTypes;
+
+			/// PCO map of ObsTypes 
+		std::map< SatID::SatelliteSystem, std::map<TypeID, Triple> > sysPCOMap;
 
          /// Position of antenna L1 phase center with respect to ARP ([UEN]).
       Triple L1PhaseCenter;

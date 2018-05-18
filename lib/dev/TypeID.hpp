@@ -48,6 +48,9 @@
 //
 //  2017/08/04		  add member function IsCarrierPhase(), getFreqBand() for 
 //						  class TypeID 
+//  2018/04/12		  add type 'numFreq' to record the number of frequency used 
+//						  in the selected sat system
+//	 2018/04/18		  add member function ConvertToRinexObsID in class TypeID
 //						  
 //============================================================================
 
@@ -60,6 +63,8 @@
 #include "RinexObsHeader.hpp"
 #include "Rinex3ObsHeader.hpp"
 #include "RinexObsID.hpp"
+#include "Antenna.hpp"
+#include "Exception.hpp"
 
 namespace gpstk
 {
@@ -143,9 +148,30 @@ namespace gpstk
          LC,        ///< Phase-based ionosphere-free combination
          PI,        ///< Code-based ionospheric combination
          LI,        ///< Phase-based ionospheric combination
+         LI12,      ///< Phase-based ionospheric combination with band 1 and 
+						  ///< band 2. Note: for different systems, the same band 
+						  ///< index may be corresponding to different frequency. 
+         LI15,      ///< Phase-based ionospheric combination with band 1 and 
+						  ///< band 5. 
+         LI25,      ///< Phase-based ionospheric combination with band 2 and 
+						  ///< band 5. 
+         LI17,      ///< Phase-based ionospheric combination with band 1 and 
+						  ///< band 7. 
+         LI57,      ///< Phase-based ionospheric combination with band 5 and 
+						  ///< band 7. 
 
-			deltaLI,	  ///< Time-differenced LI 
-			deltaDeltaLI,	  ///< Time-differenced LI 
+			dLI,	  ///< Time-differenced LI 
+			dLI12,	  ///< Time-differenced LI12 
+			dLI15,	  ///< Time-differenced LI15 
+			dLI25,	  ///< Time-differenced LI25 
+			dLI17,	  ///< Time-differenced LI17 
+			dLI57,	  ///< Time-differenced LI57 
+			d2LI,	  ///< Time-differenced LI 
+			d2LI12,	  ///< 2nd order Time-differenced LI 
+			d2LI15,	  ///< Time-differenced LI 
+			d2LI25,	  ///< Time-differenced LI25 
+			d2LI17,	  ///< Time-differenced LI17 
+			d2LI57,	  ///< Time-differenced LI57 
 
          Pdelta,    ///< Narrow-lane combination
          Ldelta,    ///< Wide-lane combination
@@ -364,8 +390,12 @@ namespace gpstk
             postfitL2, ///< Postfit residual, phase L2
             prefitC5,  ///< Prefit residual, code C5
             prefitL5,  ///< Prefit residual, phase L5
+            prefitC7,  ///< Prefit residual, code C5
+            prefitL7,  ///< Prefit residual, phase L5
             postfitC5, ///< Postfit residual, code C5
             postfitL5, ///< Postfit residual, phase L5
+            postfitC7, ///< Postfit residual, code C5
+            postfitL7, ///< Postfit residual, phase L5
             prefitGRAPHIC1,   ///< Prefit residual, GRAPHIC1
             prefitGRAPHIC2,   ///< Prefit residual, GRAPHIC2
             postfitGRAPHIC1,  ///< Postfit residual, GRAPHIC1
@@ -588,6 +618,12 @@ namespace gpstk
          dummy8,    ///< Generic, undefined type #8
          dummy9,    ///< Generic, undefined type #9
 
+				// Frequency number 
+			numFreq,
+
+				// postfit ionospheric variation between two epochs 
+			postfitDeltaIono,
+
          Last,      ///< used to extend this...
          Placeholder = Last+1000
       };
@@ -648,6 +684,27 @@ namespace gpstk
 			/// Convert TypeID to RinexObsType 
 		RinexObsType ConvertToRinexObsType( const SatID::SatelliteSystem& sys );  
 
+			/// Convert TypeID to RinexObsID
+		RinexObsID ConvertToRinexObsID( const SatID::SatelliteSystem& sys );
+
+			/// Convert Phase TypeID to its corresponding Cycle Slip type
+		TypeID ConvertToCSTypeID();
+
+			/// Convert to raw Observation TypeID
+		TypeID ConvertToRawTypeID();
+
+			/// Convert postfit TypeID to prefit TypeID
+		virtual TypeID ConvertToPrefitTypeID(); 
+
+			/// Convert TypeID to its time-differenced TypeID version
+		virtual TypeID ConvertToTimeDiffType( const int order ) const;
+
+			/// Convert postfit TypeID to prefit TypeID
+		virtual TypeID ConvertToPostfitTypeID(); 
+
+			/// Get Antenna::frequencyType given sat system
+		virtual Antenna::frequencyType getFequencyType( const SatID::SatelliteSystem& sys );
+
 			/// get obsType information according to obs TypeID
 		bool IsCarrierPhase();
 
@@ -682,6 +739,9 @@ namespace gpstk
 
          /// Map holding type descriptions
       static std::map< ValueType, std::string > tStrings;
+
+			/// The inverse of 'tStrings'
+		static std::map< std::string, ValueType > tTypeID;
 
 
    public:
@@ -748,6 +808,9 @@ namespace gpstk
 
    int GetCarrierBand(const RinexObsID& roi);
 
+		// Added by Lei Zhao, to handle LI TypeID 
+	int GetLITypeCarrierBand( const TypeID& liType, const int& bandIndex );
+
    TypeID::ValueType ConvertToTypeID(const RinexObsType& rot,
                                      const RinexSatID& sat);
 
@@ -755,6 +818,7 @@ namespace gpstk
                                      const RinexSatID& sat);
 
    TypeID::ValueType ConvertToTypeID(std::string &str);
+
 
 }  // End of namespace gpstk
 

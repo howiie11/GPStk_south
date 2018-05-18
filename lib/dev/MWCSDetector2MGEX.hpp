@@ -230,6 +230,26 @@ namespace gpstk
             /// Returns a string identifying this object.
             virtual std::string getClassName(void) const;
             
+				/// Set Sys<--->CS flag
+				virtual MWCSDetector2MGEX& addSystemCSFlagSet( 
+																const SatID::SatelliteSystem& sys,
+																TypeIDSet& CSFlagSet )
+				{ 
+					sysCSTypes[ sys ] = CSFlagSet;	
+					return (*this);
+				}
+
+				/// Set Sys<--->LLI flag
+				virtual MWCSDetector2MGEX& addSystemLLIFlagSet( 
+																	const SatID::SatelliteSystem& sys,
+																	TypeIDSet& LLIFlagSet )
+				{ 
+					sysLLITypes[ sys ] = LLIFlagSet;	
+					return (*this);
+				}
+	
+
+
             
             /// Destructor
             virtual ~MWCSDetector2MGEX() {};
@@ -237,6 +257,12 @@ namespace gpstk
             
       private:
             
+
+				/// SysCSFlagSet 
+				SysTypeIDSetMap sysCSTypes;
+
+				/// SysLLIFlagSet 
+				SysTypeIDSetMap sysLLITypes;
             
             /// Type of observation.
             TypeID obsType;
@@ -319,8 +345,9 @@ namespace gpstk
                                         typeValueMap& tvMap,
                                         const short& epochflag,
                                         const double& mw,
-                                        const double& lli1,
-                                        const double& lli2);
+													 const bool& lliCS );
+                                        //const double& lli1,
+                                        //const double& lli2);
             
             
       }; // End of class 'MWCSDetector2MGEX'
