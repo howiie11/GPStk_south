@@ -267,12 +267,24 @@ namespace gpstk
  				timeInteruption = getSatFilterData( epoch, sat, tvm, 
 																epochflag, satTimeDiffData ); 
 
-//				if( timeInteruption )
-//				{
-//						// This is the case of first observation session 
-//						// Just insert CS
-//					
-//				}
+				if( timeInteruption )
+				{
+						// This is the case of first observation session 
+						// Just insert CS
+					TypeIDSet phaseTypes( sysPhaseObsTypes(sat.system) );
+					for( TypeIDSet::iterator itType = phaseTypes.begin(); 
+						  itType != phaseTypes.end(); 
+						  ++itType )
+					{
+						TypeID type( *itType );
+						TypeID csType( type.ConvertToCSTypeID() );
+						
+						gData(sat)[csType] = 1.0;
+
+//						std::cout << "new sat" << sat << std::endl;
+					} // End of 'for( TypeIDSet::iterator itType ... '
+					
+				} // End of 'if( timeInteruption )'
 
 				if( useTimeDifferencedLI )
 				{
@@ -349,11 +361,18 @@ namespace gpstk
 				std::cout << "detect cycle slips" << std::endl;
 				cycleSlipDetection( satTimeDiffData, gData );
 
+				
 				if( correctCS )
 				{
-					std::cout << "fix cycle slips" << std::endl;
-						// Correct cycle slip 
-					cycleSlipResolution( satTimeDiffData, gData );
+					std::cout << "Resolve cycle slips" << std::endl;
+						// Resolve cycle slip 
+					cycleSlipResolution( epoch, satTimeDiffData, gData );
+					
+						// Correct cycle slip
+					std::cout << "Correct cycle slips" << std::endl;
+
+					cycleSlipCorrection( gData );
+
 				} // End of 'if( correctCS )'
 			}   
 			else
@@ -412,6 +431,8 @@ namespace gpstk
 		satEpochTypeValueMap::const_iterator itFormData = satFormerData.find( sat );
 		if( itFormData == satFormerData.end() )
 		{
+
+//			std::cout << "new sat: " << sat << std::endl;
 				// This means a new sat
 			satFormerData[sat] = etvb;
 			//satFormerData[sat].epoch = epoch;
@@ -443,6 +464,8 @@ namespace gpstk
 
 				// Clear the satCSMap 
 			satCSMap.erase(sat);
+			satCSRFlag.erase(sat);
+			satCSRValues.removeSatID(sat);
 
 				// Just return
 			return reportTimeInteruption;
@@ -831,7 +854,6 @@ namespace gpstk
 
 					// Judge whether to discard the phase observable of this sat
 					// Convert to RinexObsID 
-					// Check the MW CS first
 				RinexObsID roi( type.ConvertToRinexObsID(sys) );
 				if( roi.type == ObsID::otPhase )
 				{
@@ -1239,10 +1261,8 @@ namespace gpstk
 							if( upperTailPro < normalTestAlpha )
 							{
 									// CS occurred 
-//								std::cout << sat << " CS occurred" << std::endl;
-									
+								//std::cout << sat << " CS occurred" << std::endl;
 								stvm(sat)[csType] = 1.0;
-									
 								badSatSet.insert(sat);
 							}
 							else{
@@ -1834,14 +1854,21 @@ namespace gpstk
 				RinexObsID roi( type.ConvertToRinexObsID(sat.system) );
 				int band( GetCarrierBand( roi ) );
 
+				TypeID rawType( type.ConvertToRawTypeID() );
+				TypeID csType( type.ConvertToCSTypeID() );
+
 				double fixedVal( fixedCSVec(i) );
-				if( SR > 0.9997 && fixedVal != 0 )
-				{
-					std::cout << "CS correction" << std::endl;
-					
-					TypeID rawType( type.ConvertToRawTypeID() );
-					gData(sat)(rawType) -= getWavelength(sat, band)*fixedVal;
-				}
+				//if( SR > 0.99 && fixedVal != 0 )
+//				if( SR > 0.99 )
+//				{
+					//std::cout << "" << std::endl;
+						// Record the CS integer estimates
+//					satCSMap[sat][csType] = getWavelength(sat, band)*fixedVal;
+
+//					gData(sat)(csType) = 0.0;
+//					gData(sat)(rawType) -= getWavelength(sat, band)*fixedVal;
+//					gData(sat)(rawType) -= satCSMap(sat)(csType);
+//				}
 
 
 			}  // End of 'for( TypeIDSet::const_iterator itTypes = ... '
@@ -1863,6 +1890,7 @@ namespace gpstk
 			 *
 			 */
 	void CycleSlipEstimator2::cycleSlipResolution( 
+																const CommonTime& epoch, 
 																satTypeValueMap& satTimeDiffData, 
 																satTypeValueMap& gData )
 	{
@@ -1872,86 +1900,39 @@ namespace gpstk
 				// Sat by sat resolution
 //			satBySatResolution( satTimeDiffData, gData );
 
-				// Integrated resolution 
-			integratedResolution( satTimeDiffData, gData );
+			integratedResolution(epoch, satTimeDiffData, gData);
 
-
-//				// Fix the float cycle-slip estimates
-//				// MLAMBDA  
-//			ARMLambda mlambda;	
-//	
-//				// Resolve
-//			mlambda.resolve(csVec, csCov);
-//	
-//				// Fixed Solution 
-//			Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
-//			ratio = mlambda.getRatio();
-//	
-//				// Compute IB Success Rate
-//			SuccessRate sr( csCov );
-//			SR = sr.getSuccessRate();
-//			
-//	
-//
-//			std::cout << "SR: " << SR  << " ratio: " << ratio <<  std::endl;
-//			if( SR > SuccessRateThreshold )
+//				// Integrated resolution using 'integratedResolution' 
+//			while(1)
 //			{
-//				size_t s( csVec.size() );
-//				for( size_t i=0; i<s; i++ )
+//				SatIDSet tmpSats;
+//				
+//				tmpSats = integratedResolution2( epoch, satTimeDiffData, gData );
+//
+//				std::cout << "size of tmpSats: " << tmpSats.size() << std::endl;
+//
+//				if( tmpSats.empty() ) break;
+//
+//				for( SatIDSet::iterator itSat = tmpSats.begin(); 
+//					  itSat != tmpSats.end(); 
+//					  ++itSat )
 //				{
-//					SatID sat( ambColSat[i].first );
-//					
-//						// Phase Obs TypeID e.g. prefitL1
-//					TypeID phaseType( ambColSat[i].second );
-//
-//					double fixedVal( fixedCSVec(i) );
-//
-//						// Convert phase TypeID to RinexObsID to get the band info
-//					RinexObsID roi( phaseType.ConvertToRinexObsID(sat.system) );
-//
-//					int band( GetCarrierBand(roi) );
-//					
-//						// Insert fixed cycle slip 
-//					satFixedCS[sat][phaseType] = fixedVal;
-//					
-////					if( fixedVal != 0 )
-////					{
-////						 gData(sat)[TypeID::CSL1] = 1.0;
-////						 gData(sat)[TypeID::CSL2] = 1.0;
-////					}
-////
-////					if( fixedVal == 0 )
-////					{
-////						 gData(sat)[TypeID::CSL1] = 0.0;
-////						 gData(sat)[TypeID::CSL2] = 0.0;
-////					}
-////						// Make cycle slip correction
-////					TypeID resultType( ConvertToTypeID(roi, sat) );
-////					gData(sat)(resultType) += getWavelength(sat, band)*fixedVal;
-//					if( phaseType == TypeID::prefitL1 ) 
+//					SatID sat(*itSat);
+//						// Wipe out CS flag
+//					TypeIDSet phaseTypes( sysPhaseObsTypes(sat.system) );
+//					for( TypeIDSet::iterator itType = phaseTypes.begin(); 
+//						  itType != phaseTypes.end(); 
+//						  ++itType )
 //					{
-////						gData(sat)[TypeID::CSL1] = 0.0;
-//						gData(sat)(TypeID::L1) -= getWavelength(sat, band)*fixedVal;
-//					} // End of 'if( phaseType == TypeID::prefitL1'
-//					
-//					if( phaseType == TypeID::prefitL2 )
-//					{
-////						gData(sat)[TypeID::CSL2] = 0.0;
-//						gData(sat)(TypeID::L2) -= getWavelength(sat, band)*fixedVal;
-//					} // End of 'if( phaseType == TypeID::prefitL1'
-//				} // End of ' for( size_t i=0; i<s; i++ ) '
-//			}
-////			else {
-////				size_t s( csVec.size() );
-////				for( size_t i=0; i<s; i++ )
-////				{
-////					SatID sat( ambColSat[i].first );
-////								
-////						// No CS for this sat
-////					gData(sat)[TypeID::CSL1] = 0.0;
-////					gData(sat)[TypeID::CSL2] = 0.0;
-////				} 
-////			} // End of 'if( SR > 0.9 )'
+//						TypeID type(*itType);
+//						TypeID csType(type.ConvertToCSTypeID());
+//
+//						gData(sat)(csType) = 0.0;
+//					} // End of 'for( TypeID::iterator itType ... '
+//				} // End of 'for( SatIDSet::iterator itSat = tmpSats.begin(); ... '
+//
+//			} // End of 'while(1)'
+
 		}
 		catch( Exception& e )
 		{
@@ -2353,6 +2334,22 @@ namespace gpstk
 
 			} // End of 'for( int iteration=0; iteration<100; ++iteration )'
 
+//			std::cout << "num of CS sats: " << CSSatSet.size() << std::endl;
+//			if( CSSatSet.size() > 4 )
+//			{
+//				gData.removeSatID( CSSatSet );
+//			}
+			
+//				// Sat CS counter
+//			if( !CSSatSet.empty() )
+//			{
+//					// New CS sat has been detected 
+//					// insert the sat into 'satCSCounter' 
+//				satTypeValueMap::iterator it = satCSCounter.find( sat );
+//
+//			} // End of 'if( !CSSatSet.empty() )'
+
+
 		} // End of 'virtual void CycleSlipEstimator2::integratedDetection( ... '
 
 
@@ -2362,10 +2359,11 @@ namespace gpstk
 		 *	@param gData 
 		 *
 		 */
-	void CycleSlipEstimator2::integratedResolution( satTypeValueMap& satTimeDiffData,
-																	satTypeValueMap& gData )
+	void CycleSlipEstimator2::integratedResolution( 
+																const CommonTime& epoch,
+																satTypeValueMap& satTimeDiffData,
+																satTypeValueMap& gData )
 	{
-
 			// Num of 'CSSatSet'
 		size_t numCSSat( CSSatSet.size() );
 
@@ -2382,8 +2380,6 @@ namespace gpstk
 			SatID sat( ionColSat[d] );
 			std::cout << d << ": " << sat << std::endl; 
 		}
-
-
 		// Debug code ^^^ 
 
 			// Compute rows and columns 
@@ -2607,59 +2603,413 @@ namespace gpstk
 			// Mark CS flag
 		std::cout << "success rate: " << SR << " ratio: " << ratio << std::endl;
 		std::cout << "fixed solution: " << std::endl;
-		if( SR > 0.99 )
+
+		std::map<SatID, bool> satCS;
+
+		for(i=0; i<rows; i++)
 		{
-			for(i=0; i<rows; i++)
-			{
-				SatID& sat( rowMap[i].first );
-				TypeID& type( rowMap[i].second );
+			SatID& sat( rowMap[i].first );
+			TypeID& type( rowMap[i].second );
 
+			RinexObsID roi( type.ConvertToRinexObsID(sat.system) );
+			int band( GetCarrierBand( roi ) );
+			TypeID rawType( type.ConvertToRawTypeID() );
+			TypeID csType( type.ConvertToCSTypeID() );
+			
+			double fixedVal( fixedCSVec(i) ); 
 
-				RinexObsID roi( type.ConvertToRinexObsID(sat.system) );
-				int band( GetCarrierBand( roi ) );
-				TypeID rawType( type.ConvertToRawTypeID() );
-				TypeID csType( type.ConvertToCSTypeID() );
-				
-				double fixedVal( fixedCSVec(i) ); 
-				if( fixedVal != 0 )
-				{
+				// Record the CS 
+//			typeValueMap csMap;
+//			csMap[csType] = getWavelength(sat, band)*fixedVal;
+//			csMap[TypeID::SuccessRate] = SR;
+//			epochTypeValueBody etvb(epoch, csMap);
+//			satCSMap[sat] = etvb;
+//			satCSMap.body[sat][csType] = getWavelength(sat, band)*fixedVal;
+//			satCSMap.header.epoch = epoch;
+			satCSMap[sat][epoch][csType] = getWavelength(sat, band)*fixedVal;
+			satCSMap[sat][epoch][TypeID::SuccessRate] = SR;
 
-						// Make Cycle Slip correction 
-//					gData(sat)(csType) = 0.0;
-//					gData(sat)(rawType) -= satCSMap(sat)(csType);
-//					try{
-//						typeValueMap tvm(satCSMap(sat));	
-//					}
-//					catch( SatIDNotFound& e )
-//					{ 
-//						std::cout << "make CS correction" << std::endl;
-//						gData(sat)(csType) = 0.0;
-						gData(sat)(rawType) -= getWavelength(sat, band)*fixedVal;
-//					}
-//						// Insert the CS value into 'satCSMap' first 
-//						// This is an accumulated quantity
-//					satCSMap[sat][csType] += getWavelength(sat, band)*fixedVal;
-				} 
-
-
-//				try
-//				{
-////					gData(sat)(csType) = 0.0;
-//					gData(sat)(rawType) -= satCSMap(sat)(csType);
-//				}
-//				catch( Exception& e )
-//				{
-//					Exception u(getClassName() + " CS correction error" + e.what() );
-//					std::cerr << u.what() << std::endl;
-//					GPSTK_THROW( u );
-//				} 
-//				std::cout << rowMap[i].first << " " << rowMap[i].second << " " << fixedCSVec(i) << std::endl;
-			}
-		}  // End of 'if( SR > 0.97 )'
-
-//		exit(-1);
+			std::cout << sat << " " << csType << " cs: " << fixedVal << std::endl;
+		} // End of 'for(i=0; i<rows; i++)'
 
 	} // End of 'void CycleSlipEstimator2::integratedResolution( ... '
+
+
+	SatIDSet CycleSlipEstimator2::integratedResolution2( 
+																const CommonTime& epoch,
+																satTypeValueMap& satTimeDiffData,
+																satTypeValueMap& gData )
+	{
+		SatIDSet noCSSats;
+
+			// Num of 'CSSatSet'
+		size_t numCSSat( CSSatSet.size() );
+
+			// If no CS sat is detected, just return  
+		if( numCSSat == 0 ) return noCSSats;
+
+			// Num of sats 
+		size_t satsNum( satTimeDiffData.numSats() );
+
+		// Debug code vvv
+		std::cout << " sat in 'ionColSat' " << std::endl; 
+		for( int d=0;d<satsNum; d++ )
+		{
+			SatID sat( ionColSat[d] );
+			std::cout << d << ": " << sat << std::endl; 
+		}
+		// Debug code ^^^ 
+
+			// Compute rows and columns 
+		size_t numCSParam(0.0);
+			
+			// Loop through the 'CSSatSet'
+		std::cout << " num of CS sat: " << CSSatSet.size() << std::endl; 
+		for( SatIDSet::iterator itSat = CSSatSet.begin();
+			  itSat != CSSatSet.end();
+			  ++itSat )
+		{
+			SatID sat( *itSat );
+			std::cout << "CS sat: " << sat << std::endl;
+
+			SatID::SatelliteSystem sys( sat.system );
+
+			size_t numPhaseTypes( sysPhaseObsTypes(sys).size() );
+
+				// For every sat, accumulate the 'numPhaseTypes'
+			numCSParam += numPhaseTypes;
+			
+		} // End of 'for( SatIDSet::iterator itSat = CSSatSet.begin(); ... '
+
+		std::cout << "numCSParam: " << numCSParam << std::endl;
+
+			// Num of 'X'
+		size_t numX( numCoorVar + 1 + numCSSat );
+
+			// Num of Phase observable
+		size_t numPhaseObs(numCSParam);
+
+			// rows is equal to cols 
+		size_t rows( numPhaseObs ), cols( numCSParam );
+
+			// Fill 'y' 'hMatrix' 'rMatrix' 
+		Vector<double> ybar2( rows,  0.0 );
+		Matrix<double> Qybar2( rows, rows, 0.0 );
+		Vector<double> phaseVec( rows, 0.0 );
+		Matrix<double> Qphase( rows, rows, 0.0 );
+		Matrix<double> hMatrix( rows, cols, 0.0 );
+ 
+		Matrix<double> A( rows, numX, 0.0 );
+		Vector<double> x( numX, 0.0 );
+		Matrix<double> Qx( numX, numX, 0.0 );
+
+			// Row index
+		int i(0);
+
+			// sat index
+		int j(0);
+
+			// sat position index in ionospheric part of x 
+		std::vector<int> satXPos;
+
+			// map: row <---> < CS sat, type >
+		std::map< int, std::pair<SatID, TypeID> > rowMap;
+
+			// Loop through the 'CSSatSet'
+		for( SatIDSet::iterator itSat = CSSatSet.begin();
+			  itSat != CSSatSet.end();
+			  ++itSat )
+		{
+
+			SatID sat( *itSat );
+			std::cout  << sat << std::endl;
+
+			TypeIDSet phaseTypes( sysPhaseObsTypes(sat.system) );	
+
+			for( TypeIDSet::const_iterator itTypes = phaseTypes.begin();
+				  itTypes != phaseTypes.end();
+				  ++itTypes ) 
+			{
+				TypeID pType( *itTypes );
+				std::cout << "Phase Type: " << pType << std::endl;
+
+				try
+				{
+						// Phase observable of 'sat'
+					double phase( satTimeDiffData(sat)(pType) );
+
+						// Get the current band 
+					RinexObsID roi( pType.ConvertToRinexObsID(sat.system) );
+					int band( GetCarrierBand( roi ) );
+					double miu( getMiu( sat.system, band ) );
+
+						// ***Fill matrix A 
+					if( !staticReceiver )
+					{
+							// Coefficients for the coordinate displacement deltadx/y/z
+							// but here is an approximation:
+						A(i, 0) = gData(sat)(TypeID::dx); 
+						A(i, 1) = gData(sat)(TypeID::dy); 
+						A(i, 2) = gData(sat)(TypeID::dz); 
+					} 
+
+						// Coefficients for the variation of receiver clock 
+					A( i, numCoorVar ) = 1.0;
+
+						// *** iono coefficient
+					A( i, numCoorVar + 1 + j ) = -1 * miu;
+
+						// hMatrix, only ambiguity term
+					hMatrix( i, i ) = getWavelength( sat, band );
+
+						// Assignment
+					phaseVec(i) = phase;
+
+						// zenith weight
+					double unitWeightStd( obsStd.getGNSSObsSTD( SatID::systemGPS, 
+												 TypeID::prefitPC ) );
+					double phaseStd( obsStd.getGNSSObsSTD(sat.system, pType) );
+					double q( phaseStd/unitWeightStd );
+					q *= q;
+					
+					Qphase( i, i ) = q/satTimeDiffData(sat)(TypeID::weight);
+
+				}
+				catch(Exception& e)
+				{
+					Exception u( getClassName() + "integratedResolution error!" + 
+									 e.what() );
+					std::cerr << u.what() << std::endl;
+				}
+
+					// Insert this sat row 
+				rowMap[i] = std::make_pair( sat, pType );
+
+					// Increment of row index
+				i++;
+
+
+			} // End of 'for( TypeIDSet::const_iterator itTypes ... '
+
+
+			size_t index(0);
+			for(; index<satsNum; index++)
+			{
+				SatID satIonCol( ionColSat[index] );	
+
+					// If found
+				if( satIonCol == sat ) break;
+			}
+
+				// Record this iono index 
+			satXPos.push_back( numCoorVar + 1  + index );
+
+				// Increment of sat
+			j++;
+
+		}  // End of ' for( SatIDSet::iterator itSat = CSSatSet.begin(); ... '
+
+			// Get Qx and x 
+		for( i=0; i<numCoorVar+1; i++ )
+		{
+			x(i) = solution(i);
+
+			for( j=0; j<numCoorVar+1; j++)
+			{
+				Qx( i, j ) = covMatrix(i, j);
+			} // end of ' for( int j=0; j<numCoorVar+1; j++) '
+		} // End of 'for( i=0; i<numCoorVar+1; i++ )'
+
+		for( i=0; i<numCSSat; i++ )
+		{
+			x(numCoorVar+1+i) = solution( satXPos[i] );
+			for( j=0; j<numCoorVar+1; j++ )
+			{
+				Qx( numCoorVar+1+i, j ) = Qx( j, numCoorVar+1+i ) 
+												= covMatrix( satXPos[i], j );  
+			} // End of 'for( j=0; j<numCSSat; j++ )'
+
+			for( j=0; j<numCSSat; j++ )
+			{
+				Qx( numCoorVar+1+i, numCoorVar+1+j ) 
+//					= Qx( numCoorVar+1+j, numCoorVar+1+i ) 
+						= covMatrix( satXPos[i], satXPos[j] );
+			} // End of 'for( j=numCoorVar+1; j<numCoorVar+1+numCSSat; j++ )'
+		}  // End of 'for( i=0; i<numCSSat; i++ )'
+
+//		std::cout << "covMatrix" << std::endl;
+//		std::cout << covMatrix << std::endl;
+//		std::cout << "Qx" << std::endl;
+//		std::cout << Qx << std::endl;
+
+			// Solve the float CS
+		ybar2 = phaseVec - A*x;
+		Qybar2 = Qphase + A*Qx*transpose(A);
+
+			// Weight matrix
+		Matrix<double> rMatrix( inverse(Qybar2) );
+
+		SolverWMS solver;
+		solver.Compute(ybar2, hMatrix, rMatrix);
+
+		csVec = solver.solution;
+		csCov = solver.covMatrix;
+
+		std::cout << "solution: " << std::endl;
+		for(i=0; i<rows; i++)
+		{
+		
+			std::cout << rowMap[i].first << " " << rowMap[i].second << " " << csVec(i) << std::endl;
+		}
+
+
+			// Fix the float CS as a whole 
+
+			// MLAMBDA 
+		ARMLambda mlambda;
+
+			// Resolve
+		mlambda.resolve(csVec, csCov);
+
+		Vector<double> fixedCSVec( mlambda.getFixedAmbVec() );
+		ratio = mlambda.getRatio();
+
+			// Compute IB Success Rate
+		SuccessRate sr( csCov );
+		SR = sr.getSuccessRate();
+
+			// Mark CS flag
+		std::cout << "success rate: " << SR << " ratio: " << ratio << std::endl;
+		std::cout << "fixed solution: " << std::endl;
+
+		std::map<SatID, bool> satCS;
+
+		for(i=0; i<rows; i++)
+		{
+			SatID& sat( rowMap[i].first );
+			TypeID& type( rowMap[i].second );
+
+			RinexObsID roi( type.ConvertToRinexObsID(sat.system) );
+			int band( GetCarrierBand( roi ) );
+			TypeID rawType( type.ConvertToRawTypeID() );
+			TypeID csType( type.ConvertToCSTypeID() );
+			
+			double fixedVal( fixedCSVec(i) ); 
+
+				// Record the CS 
+//			typeValueMap csMap;
+//			csMap[csType] = getWavelength(sat, band)*fixedVal;
+//			csMap[TypeID::SuccessRate] = SR;
+//			epochTypeValueBody etvb(epoch, csMap);
+//			satCSMap[sat] = etvb;
+//			satCSMap.body[sat][csType] = getWavelength(sat, band)*fixedVal;
+//			satCSMap.header.epoch = epoch;
+			satCSMap[sat][epoch][csType] = getWavelength(sat, band)*fixedVal;
+			satCSMap[sat][epoch][TypeID::SuccessRate] = SR;
+
+			std::cout << sat << " " << csType << " cs: " << fixedVal << std::endl;
+
+			if( SR > CSCSR )
+			{
+				std::map<SatID, bool>::iterator itSatCS = satCS.find( sat );
+				if( itSatCS == satCS.end() )
+				{
+						
+						// sat is not recroded
+					satCS[sat] = (fixedVal != 0);
+				}
+				else{
+					
+					satCS[sat] = satCS[sat] || (fixedVal != 0);
+				} // End of 'if( itSatCS == satCS.end() )'
+			}
+			else{
+				satCS[sat] = true;
+			}
+		}
+
+		for( std::map<SatID, bool>::iterator itSat = satCS.begin(); 
+			  itSat != satCS.end(); 
+			  ++itSat )
+		{
+			SatID sat(itSat->first);
+			bool csSat(itSat->second);
+
+			if( !csSat )
+			{
+				std::cout << sat << "is not CS sat" << std::endl;
+				noCSSats.insert(sat);
+
+				CSSatSet.erase(sat);
+				satCSMap[sat].erase(epoch);
+			}
+		} // End of 'for( std::map<SatID, bool>:: ... '
+
+
+	return noCSSats;
+
+
+	} // End of 'void CycleSlipEstimator2::integratedResolution( ... '
+
+
+	void CycleSlipEstimator2::cycleSlipCorrection( satTypeValueMap& gData )
+	{
+		if( satCSMap.empty() ) return;
+			
+		SatIDSet sats( gData.getSatID() );
+		for( SatIDSet::iterator itSat = sats.begin(); 
+			  itSat != sats.end(); 
+			  ++itSat )
+		{
+			SatID sat(*itSat);
+
+			std::cout << sat << std::endl;
+
+				// Is this sat has cs at present?
+			bool presentCSSat(false);
+			SatIDSet::iterator itS = CSSatSet.find(sat);
+			if( itS != CSSatSet.end() )
+			{
+					// Wipe out the CS flag
+				presentCSSat = true;
+			}
+
+				// Does this sat have CS history?
+			std::map< SatID, std::map<CommonTime, typeValueMap> >::iterator itMap 
+																				= satCSMap.find(sat);
+			if( itMap != satCSMap.end() && !( (*itMap).second.empty() ) )
+			{
+				std::cout << sat << " has CS history" << std::endl;
+
+				 
+					// Make CS correction
+				TypeIDSet phaseTypes( sysPhaseObsTypes(sat.system) );
+				for( TypeIDSet::iterator itType = phaseTypes.begin(); 
+					  itType != phaseTypes.end(); 
+					  ++itType )
+				{
+					TypeID type( *itType );
+					TypeID csType( type.ConvertToCSTypeID() );
+					TypeID rawType( type.ConvertToRawTypeID() );
+
+						// Check sat CS history of current cs type  to decide
+						// whether to make CS correction
+					double cs(0.0);
+					bool successCSR( checkSatCSHistory( (*itMap).second, csType, cs) );
+					if( successCSR )
+					{
+						std::cout << "make CS Correction" << std::endl;
+						gData(sat)(rawType) += cs;
+
+						if( presentCSSat ) gData(sat)(csType) = 0.0;
+					}
+				} // End of 'for( TypeIDSet::iterator itType'
+
+			} // End of 'if( itMap != satCSMap.end() )'
+
+		} // End of 'for( SatIDSet::iterator itSat = ... '
+
+	} // End of 'void CycleSlipEstimator2::cycleSlipCorrection( ... '
 	
 
 
@@ -2687,6 +3037,35 @@ namespace gpstk
 		} // End of 'bool CycleSlipEstimator2::normalResidualTest( ... '
 
 
+		bool CycleSlipEstimator2::checkSatCSHistory( epochTypeValueMap& csMap, 
+																	TypeID& csType, 
+																	double& cs )
+		{
+			bool successCSR(true);
+
+				// Loop through 'csMap'
+			for( epochTypeValueMap::iterator it = csMap.begin();
+				  it != csMap.end(); 
+				  ++it )
+			{
+				CommonTime time( it->first );
+				typeValueMap tvm( it->second );
+				
+				double sr( tvm(TypeID::SuccessRate ));
+
+				CivilTime ct(time);
+				std::cout << ct.year << " " << ct.month << " " << ct.day << " "
+								<< ct.hour << " " << ct.minute << " " << ct.second << std::endl;
+				std::cout << "sr: " << sr << " " << csType << " " << tvm(csType) << std::endl; 
+
+				successCSR = ( sr>CSCSR ) && successCSR;
+
+				cs += tvm(csType);
+
+			} // End of 'for( SatTimeTypeValueMap::iterator it ... '
+
+			return successCSR;
+		} // End of 'for( SatTimeTypeValueMap::iterator it = satCSData.begin();'
 
 
 }   // End of namespace

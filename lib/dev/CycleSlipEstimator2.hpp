@@ -89,30 +89,30 @@ namespace gpstk
 			 * @param obsTypes 
 			 *
 			 */
-			CycleSlipEstimator2( const SatID::SatelliteSystem& usrSys,
-									  const TypeIDSet& usrObsTypes )
-										 : staticReceiver(true), deltaTMax(61.0),
+//			CycleSlipEstimator2( const SatID::SatelliteSystem& usrSys,
+//									  const TypeIDSet& usrObsTypes )
+			CycleSlipEstimator2() : staticReceiver(true), deltaTMax(121.0),
 											SR(0.0), ratio(0.0), useTimeDifferencedLI(false),
 											dLI(0), dLIStd(0.1), maxBufferSize(12),
 											correctCS(false),
 											ionoWeighted(false), SuccessRateThreshold(0.988),
-											normalTestAlpha(0.005) 
+											normalTestAlpha(0.005), CSCSR(0.99) 
 			{
 
 					// Num of coordinate variables 
 				numCoorVar = staticReceiver?0:3;
 
 					// Insert this sys<---> obsTypes pair 	
-				sysObsTypes[usrSys] = usrObsTypes;
+//				sysObsTypes[usrSys] = usrObsTypes;
 
 					// Get the band list of this sys, 
 					// through which, num of frequency can also be derived 
-				getBandList( usrSys );
+//				getBandList( usrSys );
 
 				//sysNumFreq[SatID::systemGPS][TypeID::numFreq] = 
 				//									CountFreqNum( SatID::systemGPS, obsTypes );
 
-				splitObsTypes(usrSys, usrObsTypes);
+//				splitObsTypes(usrSys, usrObsTypes);
 			};
 
 
@@ -199,6 +199,10 @@ namespace gpstk
 			/// Set normalTestAlpha 
 		virtual CycleSlipEstimator2& setNormalTestAlpha( double alpha )
 		{ normalTestAlpha = alpha; return (*this); };
+
+			/// Set 
+		virtual CycleSlipEstimator2& setCSCSuccessRate( double sr )
+		{ CSCSR = sr; return (*this); };
 
 			/** Set LI  types  
 			 *
@@ -303,8 +307,20 @@ namespace gpstk
 
 		private:
 
+
+				/// CSC success rate
+			double CSCSR;
+
 				/// Accumulated sat CS values 
-			satTypeValueMap satCSMap;
+			//std::map< SatID, std::map<CommonTime, typeValueMap> > 
+			SatTimeTypeValueMap	satCSMap;
+
+				/// Accumulated sat CSR success flag
+			std::map< SatID, std::map<TypeID, bool> > satCSRFlag;
+
+				/// Accumulated sat CSR values 
+			satTypeValueMap satCSRValues;
+
 
 				/// Sats set with CS
 			SatIDSet CSSatSet;
@@ -579,7 +595,8 @@ namespace gpstk
 			 * @param gData   I/O
 			 *
 			 */
-		virtual void cycleSlipResolution( satTypeValueMap& satTimeDiffData, 
+		virtual void cycleSlipResolution( const CommonTime& epoch,
+													 satTypeValueMap& satTimeDiffData, 
 											       satTypeValueMap& gData );
 			/** Hypothesis of Normalised residual
 			 *
@@ -614,9 +631,29 @@ namespace gpstk
 		 *	@param gData 
 		 *
 		 */
-		virtual void integratedResolution( satTypeValueMap& satTimeDiffData,
+
+		virtual void integratedResolution( const CommonTime& epoch,
+													  satTypeValueMap& satTimeDiffData,
 													  satTypeValueMap& gData );
-	
+		virtual SatIDSet integratedResolution2( const CommonTime& epoch,
+															 satTypeValueMap& satTimeDiffData,
+															 satTypeValueMap& gData );
+
+			/// Cycle Slip correction
+		virtual void cycleSlipCorrection( satTypeValueMap& gData );
+
+			/* Check sat CS history
+			 *
+			 * Return indicator that indicates the sucessful CSR of sat during
+			 * the history given a pre-difined threshild
+			 * @param sat
+			 * @param csType
+			 * @param cs 
+			 *
+			 */ 
+		virtual bool checkSatCSHistory( epochTypeValueMap& csMap,
+												  TypeID& csType,
+												  double& cs );
 			
 
 	};   // End of class declaration
