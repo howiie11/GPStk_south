@@ -183,6 +183,9 @@ namespace gpstk
 		virtual satTypeValueMap getSatLITTimeDiffMap()
 		{ return satLITimeDiffData; }
 
+			/// Set deltaTMax
+		virtual CycleSlipEstimator2& setDeltaTMax( double maxdT )
+		{ deltaTMax = maxdT; return (*this); }
 
 			/// Set using info of time-differenced LI 
 		virtual CycleSlipEstimator2& useTimeDiffLI( bool use )

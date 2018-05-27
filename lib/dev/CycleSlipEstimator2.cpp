@@ -3055,7 +3055,7 @@ namespace gpstk
 
 				CivilTime ct(time);
 				std::cout << ct.year << " " << ct.month << " " << ct.day << " "
-								<< ct.hour << " " << ct.minute << " " << ct.second << std::endl;
+								<< ct.hour << " " << ct.minute << " " << ct.second << " ";
 				std::cout << "sr: " << sr << " " << csType << " " << tvm(csType) << std::endl; 
 
 				successCSR = ( sr>CSCSR ) && successCSR;
