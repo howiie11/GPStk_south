@@ -209,6 +209,8 @@
    // Class to read and store the receiver type.
 #include "RecTypeDataReader.hpp"
 
+	// Class to compute convergence time and RMS
+#include "PositioningResultsEvaluator.hpp"
 
 
 
@@ -322,6 +324,12 @@ private:
 								  CommonTime& time,
 								  CycleSlipEstimator2& csetor,
 								  int  precision = 4 );
+		// Method to print sat data (more general )
+	void printSatData( ofstream& outfile, CommonTime& time, 
+							 satTypeValueMap& satData, int precisiom = 4 );
+
+	void printSatData( ofstream& outfile, CommonTime& time, 
+							 satStringValueMap& satData, int precisiom = 4 );
 
 
 
@@ -521,6 +529,95 @@ void ppp::printModel( ofstream& modelfile,
 
 }  // End of method 'ppp::printModel()'
 
+   // Method to print model values
+void ppp::printSatData(	ofstream& outfile,
+                        CommonTime& time,
+								satStringValueMap& satData,
+                        int precision )
+{
+
+      // Prepare for printing
+   outfile << fixed << setprecision( precision );
+
+      // Iterate through the GNSS Data Structure
+   for ( satStringValueMap::const_iterator it = satData.begin();
+         it!= satData.end();
+         it++ )
+   {
+
+         // Print epoch
+      outfile << static_cast<YDSTime>(time).year         << "  ";    // Year           #1
+      outfile << static_cast<YDSTime>(time).doy          << "  ";    // DayOfYear      #2
+      outfile << static_cast<YDSTime>(time).sod    << "  ";    // SecondsOfDay   #3
+
+         // Print satellite information (Satellite system and ID number)
+      outfile << (*it).first << " ";             // System         #4
+                                                   // ID number      #5
+
+         // Print model values
+      for( stringValueMap::const_iterator itObs  = (*it).second.begin();
+           itObs != (*it).second.end();
+           itObs++ )
+      {
+				   // Print type names and values
+				outfile << itObs -> first << " ";
+				outfile << itObs -> second << " ";
+
+      }  // End of 'for( typeValueMap::const_iterator itObs = ...'
+
+      outfile << endl;
+
+   }  // End for (it = gData.body.begin(); ... )
+
+}  // End of method 'ppp::printModel()'
+
+
+
+
+   // Method to print model values
+void ppp::printSatData(	ofstream& outfile,
+                        CommonTime& time,
+								satTypeValueMap& satData,
+                        int precision )
+{
+
+      // Prepare for printing
+   outfile << fixed << setprecision( precision );
+
+      // Iterate through the GNSS Data Structure
+   for ( satTypeValueMap::const_iterator it = satData.begin();
+         it!= satData.end();
+         it++ )
+   {
+
+         // Print epoch
+      outfile << static_cast<YDSTime>(time).year         << "  ";    // Year           #1
+      outfile << static_cast<YDSTime>(time).doy          << "  ";    // DayOfYear      #2
+      outfile << static_cast<YDSTime>(time).sod    << "  ";    // SecondsOfDay   #3
+
+         // Print satellite information (Satellite system and ID number)
+      outfile << (*it).first << " ";             // System         #4
+                                                   // ID number      #5
+
+         // Print model values
+      for( typeValueMap::const_iterator itObs  = (*it).second.begin();
+           itObs != (*it).second.end();
+           itObs++ )
+      {
+				   // Print type names and values
+				outfile << itObs -> first << " ";
+				outfile << itObs -> second << " ";
+
+      }  // End of 'for( typeValueMap::const_iterator itObs = ...'
+
+      outfile << endl;
+
+   }  // End for (it = gData.body.begin(); ... )
+
+}  // End of method 'ppp::printModel()'
+
+
+
 	   // Method to print dli values
 void ppp::printTimeDiffLI(	 ofstream& dlifile,
 									 CommonTime& time,
@@ -573,8 +670,8 @@ void ppp::printTimeDiffLI(	 ofstream& dlifile,
 //			double csl2( csetor.getSatFixedCS(sat, TypeID::prefitL2) );
 //
 //				// Print sat postfit
-			double sr( csetor.getSuccessRate() );
-			double ratio( csetor.getRatio() );
+//			double sr( csetor.getSuccessRate() );
+//			double ratio( csetor.getRatio() );
 //			dlifile << "postP1: " << postp1 << " ";
 //			dlifile << "postP2: " << postp2 << " ";
 //			dlifile << "postL1: " << postl1 << " ";
@@ -582,8 +679,8 @@ void ppp::printTimeDiffLI(	 ofstream& dlifile,
 //			dlifile << "Qvv_P1: " << qvv <<  " "; 
 //			dlifile << "CSL1: " << csl1 << " ";
 //			dlifile << "CSL2: " << csl2 << " ";
-			dlifile << "sr: " << sr << " "; 
-			dlifile << "ratio: " << ratio << " "; 
+//			dlifile << "sr: " << sr << " "; 
+//			dlifile << "ratio: " << ratio << " "; 
 		}
 		catch(...)
 		{
@@ -623,6 +720,7 @@ void ppp::printModel2( ofstream& ncsfile,
 	int numSats( gData.numSats() );
 	int numCSSats(0);
 	string satStr;
+	string totalSatStr;
 
       // Iterate through the GNSS Data Structure
    for ( satTypeValueMap::const_iterator it = gData.body.begin();
@@ -630,6 +728,8 @@ void ppp::printModel2( ofstream& ncsfile,
          it++ )
    {
 		SatID sat( it->first );
+
+		totalSatStr = totalSatStr + " " + StringUtils::asString(sat);
 
 		typeValueMap tymap( it->second );
 		double value = tymap(TypeID::CSL1); 
@@ -663,8 +763,8 @@ void ppp::printModel2( ofstream& ncsfile,
 
    }  // End for (it = gData.body.begin(); ... )
 
-   ncsfile << "numSat: " << numSats << " numCSSats: " << numCSSats
-					<< " CSSats: " + satStr <<  endl;
+   ncsfile << "numSat: " << numSats << " numCSSats: " << numCSSats 
+					<< " totalSats: " << totalSatStr << " CSSats: " + satStr <<  endl;
 
 }  // End of method 'ppp::printModel2()'
 
@@ -1561,8 +1661,10 @@ void ppp::process()
 
          // Object to compute the tropospheric data
       ComputeTropModel computeTropo(neillTM);
-      pList.push_back(computeTropo);       // Add to processing list
-
+		if( confReader.getValueAsBoolean("tropo") )
+		{
+			pList.push_back(computeTropo);       // Add to processing list
+		}
 
          // Object to remove eclipsed satellites
       EclipsedSatFilter eclipsedSV;
@@ -1602,79 +1704,95 @@ void ppp::process()
 
       pList.push_back(linearPrefit);       // Add to processing list
 
-			// Cycle-slip detection and correction
-		TypeIDSet obsTypesG, obsTypesE;
-		obsTypesG.insert(TypeID::prefitP1);
-		obsTypesG.insert(TypeID::prefitP2);
-		obsTypesG.insert(TypeID::prefitL2);
-		obsTypesG.insert(TypeID::prefitL1);
-//		obsTypesG.insert(TypeID::prefitC5);
-//		obsTypesG.insert(TypeID::prefitL5);
-
-		obsTypesE.insert( TypeID::prefitC1);
-		obsTypesE.insert( TypeID::prefitC5);
-//		obsTypesE.insert( TypeID::prefitC7);
-		obsTypesE.insert( TypeID::prefitL1);
-		obsTypesE.insert( TypeID::prefitL5);
-//		obsTypesE.insert( TypeID::prefitL7);
-
-		CycleSlipEstimator2 csEstimator( SatID::systemGPS, obsTypesG );
-
-		if( employGALILEO )
-		{
-			csEstimator.addSystemObsTypes( SatID::systemGalileo, obsTypesE );
-		}
-
-         // Get if we want to process coordinates as white noise
-      bool isWN( confReader.getValueAsBoolean( "coordAsWhiteNoise") );
-
-			//	Set receiver state 
-		csEstimator.setReceiverStatic( !isWN );
+		CycleSlipEstimator2 csEstimator;
 
 			// Use LI info 
 			// Compute LI combination first
 		ComputeLinearMGEX linearLI;
 
-		if( employGPS )
-		{
-			linearLI.addLinear( SatID::systemGPS, comb.li12CombinationGPS );
-//			linearLI.addLinear( SatID::systemGPS, comb.liCombinationGPS );
-		}
-		if( employGALILEO )
-		{
-			linearLI.addLinear( SatID::systemGalileo, comb.li15CombinationGalileo );
-			linearLI.addLinear( SatID::systemGalileo, comb.liCombinationGalileo );
-		}
-
-		pList.push_back( linearLI );
-
 			// Continue to configure csEstimator
-		csEstimator.useTimeDiffLI( confReader.getValueAsBoolean("computedLI") );
-		csEstimator.setIonoWeighted( confReader.getValueAsBoolean("CSIono") );
-		csEstimator.setNormalTestAlpha( confReader.getValueAsDouble("CodeBlunderAlpha") );
-
-		TypeIDSet liTypesG, liTypesE;
-		
-		liTypesG.insert(TypeID::LI12);
-//		liTypesG.insert(TypeID::LI);
-		liTypesE.insert(TypeID::LI15);
-
-
-		csEstimator.setLITypes( SatID::systemGPS, liTypesG );
-
-		if( employGALILEO )
+		bool computedLI( confReader.getValueAsBoolean("computedLI") );
+		if( computedLI )
 		{
-			csEstimator.addLITypes( SatID::systemGalileo, liTypesE );
-		}
+				// Compute LI type first
+			if( employGPS )
+			{
+				linearLI.addLinear( SatID::systemGPS, comb.li12CombinationGPS );
+	//			linearLI.addLinear( SatID::systemGPS, comb.liCombinationGPS );
+			}
+			if( employGALILEO )
+			{
+				linearLI.addLinear( SatID::systemGalileo, comb.li15CombinationGalileo );
+				linearLI.addLinear( SatID::systemGalileo, comb.liCombinationGalileo );
+			}
+			pList.push_back( linearLI );
+
+				// 
+			csEstimator.useTimeDiffLI( true );
+			TypeIDSet liTypesG, liTypesE;
+			
+			liTypesG.insert(TypeID::LI12);
+	//		liTypesG.insert(TypeID::LI);
+			liTypesE.insert(TypeID::LI15);
+	
+			csEstimator.setLITypes( SatID::systemGPS, liTypesG );
+	
+			if( employGALILEO )
+			{
+				csEstimator.addLITypes( SatID::systemGalileo, liTypesE );
+			}
+		}  // End of 'if( confReader.getValueAsBoolean("computedLI") )'
+		
+
+	      // Get if we want to process coordinates as white noise
+	   bool isWN( confReader.getValueAsBoolean( "coordAsWhiteNoise") );
+
+		bool modelTDObs = confReader.getValueAsBoolean("modelTDObs");
+		if( modelTDObs )
+		{
+
+			csEstimator.modelTimeDifferencedObs( true );
+
+				// Cycle-slip detection and correction
+			TypeIDSet obsTypesG, obsTypesE;
+			obsTypesG.insert(TypeID::prefitP1);
+			obsTypesG.insert(TypeID::prefitP2);
+			obsTypesG.insert(TypeID::prefitL2);
+			obsTypesG.insert(TypeID::prefitL1);
+	//		obsTypesG.insert(TypeID::prefitC5);
+	//		obsTypesG.insert(TypeID::prefitL5);
+
+			obsTypesE.insert( TypeID::prefitC1);
+			obsTypesE.insert( TypeID::prefitC5);
+			obsTypesE.insert( TypeID::prefitC7);
+			obsTypesE.insert( TypeID::prefitL1);
+			obsTypesE.insert( TypeID::prefitL5);
+			obsTypesE.insert( TypeID::prefitL7);
+
+			csEstimator.addSystemObsTypes( SatID::systemGPS, obsTypesG );
+	
+			if( employGALILEO )
+			{
+				csEstimator.addSystemObsTypes( SatID::systemGalileo, obsTypesE );
+			}
+	
+	
+				//	Set receiver state 
+			csEstimator.setReceiverStatic( !isWN );
+
+			csEstimator.setDeltaTMax( confReader.getValueAsDouble("deltaTMax")  );
+
+			csEstimator.setIonoWeighted( confReader.getValueAsBoolean("CSIono") );
+			csEstimator.setCodeBlunderTestAlpha( confReader.getValueAsDouble("CodeBlunderAlpha") );
+			csEstimator.setPhaseResidualTestAlpha( confReader.getValueAsDouble("phaseResidualAlpha") );
+			csEstimator.setSatBySatDetection( confReader.getValueAsBoolean("useSatBySatDetection") );
+
+			csEstimator.correctCycleSlip(confReader.getValueAsBoolean("CSR") );
+			csEstimator.setCSCSuccessRate( confReader.getValueAsDouble("CSCSR") );
+		} // End of 'if( confReader.getValueAsBoolean("modelTDObs") )'
 
 //		pList.push_back( csEstimator );
-		if( confReader.getValueAsBoolean("useNewCS") )
-		{
-			pList.push_back( csEstimator );
-		}
 	
-
-
          // Object to compute linear combinations for cycle slip detection
       ComputeLinearMGEX linear1;
 		if( employGPS )
@@ -1689,7 +1807,7 @@ void ppp::process()
 			linear1.addLinear(SatID::systemGalileo, comb.pdeltaCombinationGalileo);
 			linear1.addLinear(SatID::systemGalileo, comb.mwubbenaCombinationGalileo);
 			linear1.addLinear(SatID::systemGalileo, comb.ldeltaCombinationGalileo);
-//			linear1.addLinear(SatID::systemGalileo, comb.liCombinationGalileo);
+			linear1.addLinear(SatID::systemGalileo, comb.liCombinationGalileo);
 		}
       pList.push_back(linear1);       // Add to processing list
 
@@ -1698,19 +1816,75 @@ void ppp::process()
 //      pList.push_back(markCSLI);     // Add to processing list
 
 		LICSDetectorMGEX markCSLI;         // Checks LI cycle slips
+
+//		markCSLI.setDeltaTMax(121.0);
+//		markCSLI.setUseLLI(false);
+			
+			// Setting 'markCSLI'
+		TypeIDSet csFlagSetG, lliFlagSetG, csFlagSetE, lliFlagSetE;
+
+			// CS Flag
+		csFlagSetG.insert( TypeID::CSL1 );
+		csFlagSetG.insert( TypeID::CSL2 );
+		csFlagSetE.insert( TypeID::CSL1 );
+		csFlagSetE.insert( TypeID::CSL5 );
+
+			// LLI Flag
+		lliFlagSetG.insert( TypeID::LLI1 );
+		lliFlagSetG.insert( TypeID::LLI2 );
+		lliFlagSetE.insert( TypeID::LLI1 );
+		lliFlagSetE.insert( TypeID::LLI5 );
+
+		if( employGPS )
+		{
+			markCSLI.addSystemCSFlagSet( SatID::systemGPS, csFlagSetG );
+			markCSLI.addSystemLLIFlagSet( SatID::systemGPS, lliFlagSetG );
+		}
+
+		if( employGALILEO )
+		{
+			markCSLI.addSystemCSFlagSet( SatID::systemGalileo, csFlagSetE );
+			markCSLI.addSystemLLIFlagSet( SatID::systemGalileo, lliFlagSetE );
+		}
+
 //      MWCSDetector2 markCSMW;        // Checks Merbourne-Wubbena cycle slips
 //      pList.push_back(markCSLI);     // Add to processing list
 
 		if( confReader.getValueAsBoolean("useLICS") )
 		{
+			markCSLI.setMinThreshold( confReader.getValueAsDouble("LICSLimit") );
 			pList.push_back(markCSLI);     // Add to processing list
 		}
 
       MWCSDetector2MGEX markCSMW;        // Checks Merbourne-Wubbena cycle slips
 
+//		markCSMW.setDeltaTMax(121.0);
+//		markCSMW.setUseLLI(false);
+
+			// Setting of 'markCSMW'
+		if( employGPS )
+		{
+			markCSMW.addSystemCSFlagSet( SatID::systemGPS, csFlagSetG );
+			markCSMW.addSystemLLIFlagSet( SatID::systemGPS, lliFlagSetG );
+		}
+
+		if( employGALILEO )
+		{
+			markCSMW.addSystemCSFlagSet( SatID::systemGalileo, csFlagSetE );
+			markCSMW.addSystemLLIFlagSet( SatID::systemGalileo, lliFlagSetE );
+		}
+
+
+
 		if( confReader.getValueAsBoolean("useMWCS") )
 		{
 			pList.push_back(markCSMW);     // Add to processing list
+		}
+
+
+		if( confReader.getValueAsBoolean("useNewCS") )
+		{
+			pList.push_back( csEstimator );
 		}
 //      pList.push_back(markCSMW);     // Add to processing list
 
@@ -1720,6 +1894,17 @@ void ppp::process()
       SatArcMarker2MGEX markArc;
       markArc.setDeleteUnstableSats(false);
       markArc.setUnstablePeriod(151.0);
+
+		if( employGPS )
+		{
+			markArc.setCSFlag( SatID::systemGPS, TypeID::CSL1);
+		}
+
+		if( employGALILEO )
+		{
+			markArc.setCSFlag( SatID::systemGalileo, TypeID::CSL1);
+		}
+
       pList.push_back(markArc);       // Add to processing list
 
 
@@ -1792,7 +1977,11 @@ void ppp::process()
             // Feed 'ComputeSatPCenter' object with 'AntexReader' object
          svPcenter.setAntexReader( antexReader );
       }
-      pList.push_back(svPcenter);       // Add to processing list
+
+		if( confReader.getValueAsBoolean("svPcenter") )
+		{
+			pList.push_back(svPcenter);       // Add to processing list
+		}
 
 
          // Declare an object to correct observables to monument
@@ -1800,15 +1989,50 @@ void ppp::process()
       corr.setNominalPosition(nominalPos);
       corr.setMonument( offsetARP );
 
-         // Check if we want to use Antex patterns
+			// Check if we want to use Antex patterns
       bool usepatterns( confReader.getValueAsBoolean("usePCPatterns") );
       if( useantex && usepatterns )
       {
          corr.setAntenna( receiverAntenna );
-
+			
             // Should we use elevation/azimuth patterns or just elevation?
          corr.setUseAzimuth( confReader.getValueAsBoolean("useAzim") );
       }
+//      
+
+			// Set sat system and Obs types 
+		if( employGPS )
+		{
+
+			TypeIDSet obsG;
+			obsG.insert(TypeID::P1);
+			obsG.insert(TypeID::P2);
+			obsG.insert(TypeID::L1);
+			obsG.insert(TypeID::L2);
+			corr.addSystemObsTypes( SatID::systemGPS, obsG );
+		}
+
+		if( employGALILEO )
+		{
+			TypeIDSet obsE;
+			obsE.insert(TypeID::C1);
+			obsE.insert(TypeID::C5);
+			obsE.insert(TypeID::L1);
+			obsE.insert(TypeID::L5);
+			corr.addSystemObsTypes( SatID::systemGalileo, obsE );
+		}
+
+
+
+//         // Check if we want to use Antex patterns
+//      bool usepatterns( confReader.getValueAsBoolean("usePCPatterns") );
+//      if( useantex && usepatterns )
+//      {
+//         corr.setAntenna( receiverAntenna );
+//			
+//            // Should we use elevation/azimuth patterns or just elevation?
+//         corr.setUseAzimuth( confReader.getValueAsBoolean("useAzim") );
+//      }
 //      else
 //      {
 //            // Fill vector from antenna ARP to L1 phase center [UEN], in meters
@@ -1846,7 +2070,10 @@ void ppp::process()
          windup.setAntexReader( antexReader );
       }
 
-      pList.push_back(windup);       // Add to processing list
+		if( confReader.getValueAsBoolean("windup") )
+		{
+			pList.push_back(windup);       // Add to processing list
+		}
 
 
 
@@ -1878,7 +2105,7 @@ void ppp::process()
 
 		if( employGPS )
 		{
-			phaseAlignL1.setSatSystem( SatID::systemGPS);
+			phaseAlignL1.setCSFlag( SatID::systemGPS, TypeID::CSL1 );
 	      phaseAlignL1.setCodeType(TypeID::Q1);
 	      phaseAlignL1.setPhaseType(TypeID::L1);
 	      phaseAlignL1.setPhaseWavelength( 0.190293672798);
@@ -1887,7 +2114,7 @@ void ppp::process()
 	
 	         // Object to align phase with code measurements
 //	      PhaseCodeAlignment phaseAlignL2;
-			phaseAlignL2.setSatSystem( SatID::systemGPS);
+			phaseAlignL2.setCSFlag( SatID::systemGPS, TypeID::CSL2 );
 	      phaseAlignL2.setCodeType(TypeID::Q2);
 	      phaseAlignL2.setPhaseType(TypeID::L2);
 	      phaseAlignL2.setPhaseWavelength( 0.244210213425);
@@ -1896,17 +2123,22 @@ void ppp::process()
 
 		if( employGALILEO )
 		{
-			phaseAlignGALL1.setSatSystem( SatID::systemGalileo );
+			phaseAlignGALL1.setCSFlag( SatID::systemGalileo, TypeID::CSL1 );
 			phaseAlignGALL1.setCodeType( TypeID::Q1 );
 			phaseAlignGALL1.setPhaseType( TypeID::L1 );	
 			phaseAlignGALL1.setPhaseWavelength( L1_WAVELENGTH_GAL );
-			pList.push_back( phaseAlignGALL1 );
+//			pList.push_back( phaseAlignGALL1 );
 
-			phaseAlignGALL5.setSatSystem( SatID::systemGalileo );
+			phaseAlignGALL5.setCSFlag( SatID::systemGalileo, TypeID::CSL5 );
 			phaseAlignGALL5.setCodeType( TypeID::Q5 );
 			phaseAlignGALL5.setPhaseType( TypeID::L5 );	
 			phaseAlignGALL5.setPhaseWavelength( L5_WAVELENGTH_GAL );
-			pList.push_back( phaseAlignGALL5 );
+
+			if( confReader.getValueAsBoolean("phaseAlign") )
+			{
+				pList.push_back( phaseAlignGALL1 );
+				pList.push_back( phaseAlignGALL5 );
+			}
 		}
 
 
@@ -2004,8 +2236,29 @@ void ppp::process()
 
 
          // Declare solver objects
-      SolverPPPMGEX  pppSolver(isNEU);
-		pppSolver.setSatSystems( satSysSet );
+     SolverPPPMGEX  pppSolver(isNEU);
+
+	  if( confReader.getValueAsBoolean("onlyGPS") )
+	  {
+		  SatSystemSet tempSatSysSet;
+		  tempSatSysSet.insert( SatID::systemGPS );
+		  pppSolver.setSatSystems( tempSatSysSet );
+	  }
+	  else{
+			pppSolver.setSatSystems( satSysSet );
+	  }
+
+			// add CS Flag 
+		if( employGPS )
+		{
+			pppSolver.addSystemCSFlag( SatID::systemGPS, TypeID::CSL1 );
+		}
+
+		if( employGALILEO )
+		{
+			pppSolver.addSystemCSFlag( SatID::systemGalileo, TypeID::CSL1 );
+		}
+
 		bool addISBEG( false);
 //      SolverPPPMGEX   pppSolver(isNEU, addISBEG);
 
@@ -2087,6 +2340,7 @@ void ppp::process()
 
          // Prepare for printing
       int precision( confReader.getValueAsInt( "precision" ) );
+	
 
 
       string outputFileName;
@@ -2114,6 +2368,8 @@ void ppp::process()
       bool printmodel( confReader.getValueAsBoolean( "printModel" ) );
       bool printNumCSSats( confReader.getValueAsBoolean( "printCSSats" ) );
       bool printdLI( confReader.getValueAsBoolean( "printTimeDiffLI" ) );
+		bool printCSEstimationPostfit( confReader.getValueAsBoolean("printCSEstimationPostfit") );
+		bool printResultsEvaluation( confReader.getValueAsBoolean("printResultsEvaluation") );
 
       string modelName;
       ofstream modelfile;
@@ -2123,6 +2379,12 @@ void ppp::process()
 
       string ncsName;
       ofstream ncsfile;
+
+		string postfitCSEstName;
+		ofstream postfitCSEstFile;
+
+		string resultsEvaluationName;
+		ofstream resultsEvaluationFile;
 
          // Prepare for model printing
       if( printmodel )
@@ -2140,17 +2402,28 @@ void ppp::process()
          ncsfile.open( ncsName.c_str(), ios::out );
       }
 
-
-
          // Prepare for model printing
-      if( printdLI )
+      if( computedLI && printdLI )
       {
          //modelName = rnxFile + ".model";
          dliName = outputFileName + ".dli";
          dlifile.open( dliName.c_str(), ios::out );
       }
 
+			// Prepare for printing of postfit of CS estimation 
+		if( modelTDObs && printCSEstimationPostfit )
+		{
+			postfitCSEstName = outputFileName + ".postfit";
+			postfitCSEstFile.open( postfitCSEstName.c_str(), ios::out );
+		}
 
+		PositioningResultsEvaluator posEvaluator;
+		
+		if( printResultsEvaluation )
+		{
+			resultsEvaluationName = outputFileName + ".evaluation";
+			resultsEvaluationFile.open( resultsEvaluationName.c_str(), ios::out );
+		}
 
 		int counter(0);
          //// *** Now comes the REAL forwards processing part *** ////
@@ -2159,17 +2432,24 @@ void ppp::process()
       while(rin >> gRin)
       {
 
-//			counter++;
-//			if( counter > 7 ) continue;
             // Store current epoch
          CommonTime time(gRin.header.epoch);
 
 				// Time interval flag
+//			CivilTime ct(2018, 4, 2, 22, 0, 0, TimeSystem::GPS );
+//			CivilTime t( 2018, 4, 2, 22, 31, 30, TimeSystem::GPS );
+
 			 if( timeIntervalFlag )
 			 {
 				if( time < startTime ) { continue; }
 				if( time > endTime ) { break; }
+//				if( time == ct.convertToCommonTime() ) continue;
+				//if( time > t.convertToCommonTime() &&  time < ( t.convertToCommonTime() + 360)  ) continue;
+				
 			 }  // End of ' if( timeIntervalFlag ) '
+
+//			counter++;
+//			if( counter > 1 ) break;
 
             // Store the nominal position into 'SourceID'
          gRin.header.source.nominalPos = nominalPos;
@@ -2283,7 +2563,8 @@ void ppp::process()
          }
 
 				// Ask if we are going to print the model
-         if ( printdLI )
+//         if ( printdLI )
+			if( computedLI && printdLI )
          {
             printTimeDiffLI( dlifile,
 									  gRin.header.epoch,
@@ -2292,6 +2573,39 @@ void ppp::process()
 
          }
 
+				// Ask if we are going to print the postfit of CS estimation 
+			if( modelTDObs && printCSEstimationPostfit )
+			{
+				//satTypeValueMap& satData( csEstimator.getSatPostfitData() );
+				//printSatData( postfitCSEstFile, gRin.header.epoch, 
+				//				  satData, precision );
+
+				satStringValueMap& satPostData( csEstimator.getSatPostfitOriginalData() );
+				//satStringValueMap& satPostData( csEstimator.getSatPostfitData() );
+				printSatData( postfitCSEstFile, gRin.header.epoch, 
+								  satPostData, precision );
+			}
+
+				// Ask if we are goning to print the results evaluation
+			if( printResultsEvaluation )
+			{
+				Triple pos;
+
+				if( isNEU )
+				{
+					pos = Triple( pppSolver.getSolution(TypeID::dLat), 
+							        pppSolver.getSolution(TypeID::dLon),
+									  pppSolver.getSolution(TypeID::dH) );
+				}
+				else{
+	
+					pos = Triple( pppSolver.getSolution(TypeID::dx), 
+							        pppSolver.getSolution(TypeID::dy),
+									  pppSolver.getSolution(TypeID::dz) );
+				} // End of 'if( useNEU )'  
+
+				posEvaluator.addPositioningSolution( gRin.header.epoch, pos );
+			}
 
 
             // Check what type of solver we are using
@@ -2342,14 +2656,43 @@ void ppp::process()
 
 
          // If we printed the deltaLI, we must close the file
-      if ( printdLI )
+      //if ( printdLI )
+      if( computedLI && printdLI )
       {
 			cout << "deltaLI file is generated: " + dliName << endl;
             // Close model file for this station
          dlifile.close();
       }
 
+			// If we printed the postfit of CS estimation, we must close the file 
+		if( modelTDObs && printCSEstimationPostfit )
+		{
+			cout << "postfitCSEst file is generated: " + postfitCSEstName << endl;
+			postfitCSEstFile.close();
+		}
 
+			// If we printed the results evaluation, we must close the file 
+		if( printResultsEvaluation )
+		{
+				// print convergence time
+			try
+			{
+				double sod( posEvaluator.getConvergedTime() );
+
+				double hour(sod/3600);
+				
+				resultsEvaluationFile << sod << " seconds(" << hour << "h)"<< endl;
+			}
+			catch( Exception& e)
+			{
+				std::cerr << " Problem occurred when getting the converged time! " 
+								<< std::endl;
+				GPSTK_THROW(e);
+			}
+
+			cout << "evaluation file is generated: " + resultsEvaluationName << endl;
+			resultsEvaluationFile.close();
+		}
 
          //// *** Forwards processing part is over *** ////
 
