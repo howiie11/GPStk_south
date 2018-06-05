@@ -61,8 +61,8 @@ namespace gpstk
 				 * @param position
 				 */
 			PositioningResultsEvaluator() :
-								lastTime(CommonTime::BEGINNING_OF_TIME),
-								ConvergedTimePrepared(false),
+								ConvergedTimePrepared(false), firstTime(true),
+								firstEpoch(CommonTime::BEGINNING_OF_TIME),
 								convergedPosError(0.10), acceptablePosError(0.50), 
 								dTMax(61.0), timeLength(20)
 								{}; 
@@ -92,17 +92,42 @@ namespace gpstk
 
 
 				/// Return converged time (second of day)
-			virtual double getConvergedTime()
+			virtual double getConvergedTime();
+
+				/// Return RMS of N/X error component
+			virtual double getNorthErrorRMS()
 			{
-				if( ConvergedTimePrepared )
-				{
-					CommonTime convergedTime( timeWindow.front() );
-					return convergedTime.getSecondOfDay();
-				}
-				else{
-					Exception e(getClassName() + ": converged time not prepared for a given time length: " + StringUtils::asString( timeLength ) );
-					GPSTK_THROW( e );
-				}
+				return statisticianN.RMS();
+			}
+
+				/// Return average of N/X error component
+			virtual double getNorthErrorAverage()
+			{
+				return statisticianN.Average();
+			}
+
+				/// Return RMS of E/Y error component
+			virtual double getEastErrorRMS()
+			{
+				return statisticianE.RMS();
+			}
+
+				/// Return average of E/Y error component
+			virtual double getEastErrorAverage()
+			{
+				return statisticianE.Average();
+			}
+
+				/// Return RMS of U/Z error component
+			virtual double getUpErrorRMS()
+			{
+				return statisticianU.RMS();
+			}
+
+				/// Return average of U/Z error component
+			virtual double getUpErrorAverage()
+			{
+				return statisticianU.Average();
 			}
 
 				/// Return a string identifying this object
@@ -113,9 +138,8 @@ namespace gpstk
 				/// First time indicator
 			bool firstTime;
 
-
 				/// Last time recorder
-			CommonTime lastTime;
+			CommonTime firstEpoch;
 
 				/// Converged positioning error
 			double convergedPosError;
@@ -140,6 +164,9 @@ namespace gpstk
 
 				/// Statistician 
 			Stats<double> statistician;
+			Stats<double> statisticianN;
+			Stats<double> statisticianE;
+			Stats<double> statisticianU;
 
 				
 		

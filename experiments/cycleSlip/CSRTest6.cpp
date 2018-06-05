@@ -2677,11 +2677,22 @@ void ppp::process()
 				// print convergence time
 			try
 			{
+					// Convergence time
 				double sod( posEvaluator.getConvergedTime() );
-
 				double hour(sod/3600);
-				
-				resultsEvaluationFile << sod << " seconds(" << hour << "h)"<< endl;
+				double minutes(sod/60);
+
+					// RMS in N, E, U direction
+				double NErrorRMS( posEvaluator.getNorthErrorRMS() );
+				double EErrorRMS( posEvaluator.getEastErrorRMS() );
+				double UErrorRMS( posEvaluator.getUpErrorRMS() );
+
+				//resultsEvaluationFile << sod << " seconds(" << hour << "h)"<< " ";
+				resultsEvaluationFile << sod << fixed << setprecision(1) << " seconds(" << minutes << "min)"<< " ";
+				resultsEvaluationFile << setprecision(4); 
+				resultsEvaluationFile << "NRMS: " << NErrorRMS << " m ";
+				resultsEvaluationFile << "ERMS: " << EErrorRMS << " m ";
+				resultsEvaluationFile << "URMS: " << UErrorRMS << " m " << endl;;
 			}
 			catch( Exception& e)
 			{

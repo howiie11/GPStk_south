@@ -45,27 +45,58 @@ namespace gpstk
 	void PositioningResultsEvaluator::addPositioningSolution( 
 			const CommonTime& time, const Triple& position )
 	{
+			// Record the first epoch
+		if( firstTime )
+		{
+			firstEpoch = time;
+
+				// Turn off 'firstTime'
+			firstTime = false;
+		}
 
 		size_t timeWindowSize( timeWindow.size() );
-		if( timeWindowSize == timeLength ) 
-		{	
-			ConvergedTimePrepared = true;
-			return;
-		}
+		if( timeWindowSize == timeLength ) ConvergedTimePrepared = true;
 
-		double error( position.mag() );
-
-		if( error <= convergedPosError )
+		if( !ConvergedTimePrepared )
 		{
-				// Store this epoch until the size of window reaches 'timeLength'  	
-			timeWindow.push_back( time );
-			posWindow.push_back( position );
-		}
-		else{
-			Reset();
-		} // End of 'if( error < convergedPosError )'
+			double error( position.mag() );
+
+			if( error <= convergedPosError )
+			{
+					// Store this epoch until the size of window reaches 'timeLength' 
+				timeWindow.push_back( time );
+				posWindow.push_back( position );
+			}
+			else{
+				Reset();
+			} // End of 'if( error < convergedPosError )'
+		} // End if 'if( !ConvergedTimePrepared )'
+
+			// Add 'error' into statistician to Compute RMS of positioning error
+		double NError( position[0] ); 
+		double EError( position[1] ); 
+		double UError( position[2] ); 
+		if( NError <= acceptablePosError ) statisticianN.Add(NError);		 
+		if( EError <= acceptablePosError ) statisticianE.Add(EError);		 
+		if( UError <= acceptablePosError ) statisticianU.Add(UError);		 
+
 	
 	} // End of 'void PositioningResultsEvaluator:: ... '
+
+		// Return converged time (second of day)
+	double PositioningResultsEvaluator::getConvergedTime()
+	{
+		if( ConvergedTimePrepared )
+		{
+			CommonTime convergedTime( timeWindow.front() );
+			
+			return convergedTime - firstEpoch;
+		}
+		else{
+			Exception e(getClassName() + ": converged time not prepared for a given time length: " + StringUtils::asString( timeLength ) );
+			GPSTK_THROW( e );
+		}
+	} // End of 'PositioningResultsEvaluator::getConvergedTime()'
 
 } // End of 'namespace gpstk'
 
