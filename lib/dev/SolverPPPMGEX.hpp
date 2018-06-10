@@ -44,6 +44,7 @@
 #define GPSTK_SOLVERPPPMGEX_HPP
 
 #include "CodeKalmanSolver.hpp"
+#include "RequireObservablesMGEX.hpp"
 
 namespace gpstk
 {
@@ -456,6 +457,36 @@ namespace gpstk
 			/// Set employed Satellite system set 
       virtual SolverPPPMGEX& setSatSystems( SatSystemSet& satSys );
 
+			/// set whether to Check multiSys
+		virtual SolverPPPMGEX& checkMultiSystems( bool checkFlag )
+		{ checkMultiSys = checkFlag; return (*this); }
+
+			/// IsMultiSys 
+		bool isMultiSys( satTypeValueMap& gData );
+
+			/** Set restart interval.
+			 *
+			 *	@param interval    interval that restart the filter.
+			 */
+		virtual SolverPPPMGEX& setRestartInterval(double interval)
+		{
+			reIntialInterv = interval;
+			return (*this);
+		}
+
+			/** Set reinitialize flag
+			 *
+			 * @param interval    interval that restart the filter.
+			 */ 
+		virtual SolverPPPMGEX& setReInitializeFlag(bool reInit)
+		{
+			reInitialize = reInit;
+			return (*this);
+		}
+			/// Set 'requireObs' 
+      virtual SolverPPPMGEX& setRequireObservablesObject( RequireObservablesMGEX& reqObs )
+		{ requireObs = reqObs; return (*this); }
+
 
          /// Get the State Transition Matrix (phiMatrix)
       virtual Matrix<double> getPhiMatrix(void) const
@@ -509,20 +540,52 @@ namespace gpstk
       virtual std::string getClassName(void) const;
 
 
+			/// Set CS Flag and system
+		virtual SolverPPPMGEX& addSystemCSFlag( const SatID::SatelliteSystem& sys, 
+															 const TypeID& csType )
+		{
+			sysCSFlag[sys] = csType;
+			return *(this);
+		}
+
          /// Destructor.
       virtual ~SolverPPPMGEX() {};
 
 
    private:
 
+			/// Variable to indicate the first epoch
+		CommonTime firstEpoch;
+
+			/// Whether turn on the 'reInitialize' or not
+		bool reInitialize;
+
+			/// Interval to restart the filter
+		double reIntialInterv;
+
+			/// satValueMap to record num of SV of each sys
+		satValueMap sysSatNum;
+
+			/// checkMultiSys
+		bool checkMultiSys;
+
+			/// RequireObservablesMGEX
+		RequireObservablesMGEX requireObs;
 
 			/// Record input Sat system
 		SatSystemSet satSysSet;
 
+			/// sat System <---> CS Flag
+		SysTypeIDMap sysCSFlag;
+
 			/// Multi system indicator
 		bool multiSys;
+		bool onlySysDebug;
 
-			/// Glonass indicator, we need to consider this system seperately 
+			/// System indicator, we need to consider this system seperately 
+		bool employG;
+		bool employE;
+		bool employC;
 		bool employR;
 
          /// Number of variables
