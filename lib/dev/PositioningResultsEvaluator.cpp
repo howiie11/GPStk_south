@@ -46,6 +46,8 @@ namespace gpstk
 			const CommonTime& time, const Triple& position )
 	{
 			// Record the first epoch
+			// This is a cold start 
+			// TODO: data gap
 		if( firstTime )
 		{
 			firstEpoch = time;
@@ -53,8 +55,23 @@ namespace gpstk
 				// Turn off 'firstTime'
 			firstTime = false;
 		}
+		else{
+
+				// Time interval 
+			double timeInterval( time - lastEpoch );
+			if( timeInterval > dTMax )
+			{
+					// Data Gap!!!
+					// Turn on 'firstTime'
+				firstEpoch = time;
+//				firstTime = true;
+				Reset();
+			}
+		
+		} // End of 'if( firstTime )'
 
 		size_t timeWindowSize( timeWindow.size() );
+		
 		if( timeWindowSize == timeLength ) ConvergedTimePrepared = true;
 
 		if( !ConvergedTimePrepared )
@@ -69,17 +86,22 @@ namespace gpstk
 			}
 			else{
 				Reset();
+
 			} // End of 'if( error < convergedPosError )'
 		} // End if 'if( !ConvergedTimePrepared )'
+
+
 
 			// Add 'error' into statistician to Compute RMS of positioning error
 		double NError( position[0] ); 
 		double EError( position[1] ); 
 		double UError( position[2] ); 
-		if( NError <= acceptablePosError ) statisticianN.Add(NError);		 
-		if( EError <= acceptablePosError ) statisticianE.Add(EError);		 
-		if( UError <= acceptablePosError ) statisticianU.Add(UError);		 
-
+		if( std::abs( NError ) <= acceptablePosError ) statisticianN.Add(NError);		 
+		if( std::abs( EError ) <= acceptablePosError ) statisticianE.Add(EError);		 
+		if( std::abs( UError ) <= acceptablePosError ) statisticianU.Add(UError);		 
+		
+			// Update 'lastEpoch'
+		lastEpoch = time;
 	
 	} // End of 'void PositioningResultsEvaluator:: ... '
 
@@ -89,6 +111,10 @@ namespace gpstk
 		if( ConvergedTimePrepared )
 		{
 			CommonTime convergedTime( timeWindow.front() );
+			// Debug code vvv
+			std::cout << "convergence time point: " << convergedTime << std::endl;
+
+			// Debug code ^^^ 
 			
 			return convergedTime - firstEpoch;
 		}
@@ -97,6 +123,56 @@ namespace gpstk
 			GPSTK_THROW( e );
 		}
 	} // End of 'PositioningResultsEvaluator::getConvergedTime()'
+
+	void PositioningResultsEvaluator::loadFile( const std::string& filename ) 
+		throw(Exception)
+	{
+		try
+		{
+				// open the input stream
+			PositioningResultsStream strm(filename.c_str());
+			if(!strm.is_open()) {
+				Exception e("File " + filename + " could not be opened");
+				GPSTK_THROW(e);
+			} // End of 'if(!strm.is_open())'
+
+			std::cout << "Opened file " << filename << std::endl;
+
+			strm.exceptions(std::ios::failbit);
+
+				// declare header and data
+			PositioningResultsHeader head;
+
+				// Read header
+			try{
+				strm >> head;
+			}
+			catch(Exception& e) {
+				e.addText("Error reading header of file " + filename + e.getText());
+				GPSTK_RETHROW(e);
+			}
+
+				// Read data
+			try {
+				PositioningResultsData data;
+				//strm >> data;
+				while(strm >> data)
+				{
+					CommonTime epoch( data.time );
+//					Triple pos( data.coordinate );
+//					addPositioningSolution( epoch, pos );
+				} // End of 'while(strm >> data)'
+			
+			}
+			catch(Exception& e) {
+				e.addText("Error reading data of file " + filename);
+				GPSTK_RETHROW(e);
+			}
+
+			strm.close();
+		}
+		catch(Exception& e) { GPSTK_RETHROW(e); }
+	} // End of 'void PositioningResultsEvaluator::loadFile( ... '
 
 } // End of 'namespace gpstk'
 

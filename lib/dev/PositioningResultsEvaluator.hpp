@@ -44,6 +44,10 @@
 #include "Triple.hpp"
 #include "StringUtils.hpp"
 
+#include "PositioningResultsStream.hpp"
+#include "PositioningResultsHeader.hpp"
+#include "PositioningResultsData.hpp"
+
 namespace gpstk
 {
 
@@ -63,6 +67,7 @@ namespace gpstk
 			PositioningResultsEvaluator() :
 								ConvergedTimePrepared(false), firstTime(true),
 								firstEpoch(CommonTime::BEGINNING_OF_TIME),
+								lastEpoch(CommonTime::BEGINNING_OF_TIME),
 								convergedPosError(0.10), acceptablePosError(0.50), 
 								dTMax(61.0), timeLength(20)
 								{}; 
@@ -72,6 +77,8 @@ namespace gpstk
 			{ 
 				timeWindow.clear();
 				posWindow.clear();
+
+//				firstTime = true;
 
 //				statistician.Reset();
 			}
@@ -89,6 +96,9 @@ namespace gpstk
 				Triple pos( dx, dy, dz);
 				addPositioningSolution( time, pos );
 			}
+
+				/// Load Positioning Results file
+			virtual void loadFile( const std::string& filename ) throw(Exception);
 
 
 				/// Return converged time (second of day)
@@ -138,8 +148,11 @@ namespace gpstk
 				/// First time indicator
 			bool firstTime;
 
-				/// Last time recorder
+				/// First time recorder
 			CommonTime firstEpoch;
+
+				/// Last time recorder
+			CommonTime lastEpoch;
 
 				/// Converged positioning error
 			double convergedPosError;
