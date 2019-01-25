@@ -26,7 +26,13 @@
 //		2015/11/05 : Correct the GPS week we print in output file name to be 
 //						 in accordance with the solution	time. 
 //						 add a message of generating file successfully.
-//
+//    2016/03/26 : K.M.Zhu, fix the bug of generating a wrong file name of 
+//                          GPS week.
+//    2016/07/04 : K.M.Zhu, Now the MSC file can be named according to the 
+//                          SSC file automatically,and the outfile stream 
+//                          can be closed in the end of the function. 
+//    2016/09/14 : K.M.Zhu, modify the msc file name method.
+//    2016/12/30 : K.M.Zhu, add the path info to the msc file name method.
 //
 //==========================================================================
 //
@@ -93,18 +99,6 @@ void SSC2MSC::process()
 			exit(-1);
 		}	
 
-	//	try 
-	//	{
-		//	ss.open( filename.c_str());
-	//	}
-	//	catch(...)
-	//	{
-	//		cerr << "Problem opening file "
-	//		  << inputFileOption.getValue()[0]
-	//	     << endl;
-	// 	exit (-1);
-	// }
-
 		
 		ss >> sh;
 		
@@ -116,13 +110,8 @@ void SSC2MSC::process()
 		
 		   // get GPS week from release time in header:
 		CommonTime commonReleTime(sh.releaseTime.convertToCommonTime());
-
-		std::string GPSWeek = printTime(commonReleTime, "%4F");
-		//cout << "GPSWeek: " << GPSWeek << endl;
-		 
 		
 		YDSTime RefEpoch, EarliestEffect;
-		//cout << "refepoch " << RefEpoch << endl;
 		
 		typeValueMap tvMap,
 						 tvMap2,
@@ -141,11 +130,6 @@ void SSC2MSC::process()
 		{
 				// sd.antennaTypeFlag turns 'TRUE' when the loop comes to 
 				// the block of antenna type data 
-			
-			// cout << "atf " << sd.antennaTypeFlag << " " 
-			//		<< "aof " << sd.antennaOffsetFlag << " "
-			//		<< "scf " << sd.stationCoorFlag << endl;
-			
 			if (sd.antennaTypeFlag)
 			{
 					// make sure the station and antenna type have values
@@ -153,7 +137,6 @@ void SSC2MSC::process()
 					  sd.antennaType.length() != 0)
 				{
 					stationAntypeMap[sd.station] = sd.antennaType;
-			//		cout << "2 Antennatype: "<< sd.antennaType << endl;
 				}
 			}
 		
@@ -168,10 +151,6 @@ void SSC2MSC::process()
 					tvMap[TypeID::AntOffN] = sd.antennaOffset[1];
 					tvMap[TypeID::AntOffE] = sd.antennaOffset[2];
 					stationTypeValueMap[sd.station] = tvMap;
-					//cout << "2 ATOFstation: " << sd.station <<endl;
-					//cout << "2 U: " << sd.antennaOffset[0] << " "
-					//		<< "2 N: " << sd.antennaOffset[1] << " "
-					//		<< "2 E: " << sd.antennaOffset[2] << endl;
 				}
 	
 			}
@@ -204,10 +183,6 @@ void SSC2MSC::process()
 					tvMap2[TypeID::STAY] = sd.coordinates[1];
 					tvMap2[TypeID::STAZ] = sd.coordinates[2];
 					stationTypeValueMap2[sd.station] = tvMap2;			
-					//cout << "2 station: " << sd.station << endl;
-					//cout << "2 X: " << sd.coordinates[0] << " "
-					//		<< "2 Y: " << sd.coordinates[1] << " "
-					//		<< "2 Z: " << sd.coordinates[2] << endl;
 				}
 				
 				if (sd.containVelFlag)
@@ -227,78 +202,34 @@ void SSC2MSC::process()
 	
 	 	/// Now we take out the data and store them in a MSC file
 
+         /// Define the output file name according to the IGS 
+         /// filename standard		
+      string path;
+         // file name without path.
+      string outfilename;
+         // file name with path.
+      string outfile;
+
+         // find last of '/'
+      int where = filename.find_last_of('/');
+         
+         // find the dot in filename
+      int dot = filename.find_last_of('.');
+
+      path = filename.substr(0,where);
+//    std::cout << "ssc2msc.cpp: path: " << path << std::endl;
+      outfilename = filename.substr(where+1,dot-where-1) + ".msc";
+//      outfile = path + "/" + outfilename;
+		outfile = outfilename;
+//    std::cout << "ssc2msc.cpp: outfile: " << outfile << std::endl;
+
 			// define an ofstream
 		ofstream msc;
-		
-			// we can modify the output file name in this part
-		if ( outputFileOption.getCount() > 0 )
-		{
-			try 
-			{
-				msc.open( outputFileOption.getValue()[0].c_str(), ios::out );
-			}
-			
-			catch(...)
-			{
-				cerr << "Problem opening file "
-					  << outputFileOption.getValue()[0]
-					  << endl;
-				exit (-1);
-			}
-			
-			cout << "file '" << outputFileOption.getValue()[0] 
-					  << "' is generated!" << endl;
-						
-		}
-		
-		else
-		{
-			if (filename[5] == 'P')
-			{
-				int GPSWeek_int;
-					/// The GPS week we get from the header's release time 
-					/// in weekly igs SSC file is always 2 weeks later 
-					/// than the solution time, so we need to minus 2 to 
-					/// get the correct SOLUTION WEEK!
-				GPSWeek_int = atoi(GPSWeek.c_str())-2;
-				//itoa(GPSWeek_int, GPSWeek.c_str(), 10);
-				char temp[256];
-				sprintf(temp, "%d", GPSWeek_int);
-				GPSWeek = temp;
-				//cout << "GPS week of solution: " << GPSWeek << endl;
-				std::string outputFileName("igs" + GPSWeek + ".msc");
-				msc.open( outputFileName.c_str(), ios::out );
-			}
-			else 
-			{
-				std::string outputFileName("igs" + GPSWeek + ".msc");
-				msc.open( outputFileName.c_str(), ios::out );
-			}
+         
+      msc.open( outfile.c_str(), std::ios::out);
 
-				/// check out output file is opening, if true, deliver 
-				/// a message
-			if (msc.is_open())
-			{
-				cout << "file 'igs" << GPSWeek << ".msc' is generated!" << endl;
-			}
-			else 
-			{
-				cerr << "Problem in opening file igs" << GPSWeek << ".msc" << endl;
-			}
-		}	
-		
-		/// test if we store the antenna type data in the map
 
-		//for( std::map<std::string, std::string>::iterator t_saIter
-		//		 = stationAntypeMap.begin();
-      //       t_saIter != stationAntypeMap.end();
-      //       ++t_saIter )
-		//{
-		//   cout << "MapStation: " << (*t_saIter).first << endl;
-		//	  cout << "MapAntennaType: " << (*t_saIter).second << endl;
-		//}
 		
-
       	// take data out of the map to the output stream
 		for( std::map<std::string, std::string>::iterator saIter
 				= stationAntypeMap.begin();
@@ -307,7 +238,6 @@ void SSC2MSC::process()
 		{
 				// the current station we process now
 			std::string currStation = (*saIter).first;
-			//cout << "2 Current Station:" << (*saIter).first << endl;
 			 
 			//@param:
 			//	STAX : station X coordinate
@@ -409,6 +339,11 @@ void SSC2MSC::process()
 			}	
 		} // end of 'for...'
 
+//      std::cout << outfilename << " is generated in " << path << std::endl;
+      std::cout << outfilename << " is generated in present dir" << std::endl;
+
+         /// Close the msc stream
+      msc.close();
 
 	} // end of 'try'
 
